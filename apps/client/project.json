@@ -31,6 +31,11 @@
 						"input": "node_modules/@taiga-ui/icons/src",
 						"output": "assets/taiga-ui/icons"
 					},
+					{
+						"glob": "**/*",
+						"input": "node_modules/@taiga-ui/icons-fontawesome/src",
+						"output": "assets/taiga-ui/icons/"
+					},
 					"apps/client/src/favicon.ico",
 					"apps/client/src/.htaccess"
 				],

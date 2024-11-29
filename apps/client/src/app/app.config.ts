@@ -11,6 +11,7 @@ import { TuiDialog } from '@taiga-ui/core';
 
 import localeEnGB from '@angular/common/locales/en-GB';
 import localeDeDE from '@angular/common/locales/de';
+import { STORAGE_TOKEN } from './shared/services';
 
 registerLocaleData(localeEnGB, 'en-GB');
 registerLocaleData(localeDeDE, 'de-DE');
@@ -37,6 +38,7 @@ export const appConfig: ApplicationConfig = {
 		}),
 		importProvidersFrom(TuiDialog),
 		NG_EVENT_PLUGINS,
+		{ provide: STORAGE_TOKEN, useValue: localStorage },
 		{
 			provide: APP_INITIALIZER,
 			useFactory: initializeApplication,

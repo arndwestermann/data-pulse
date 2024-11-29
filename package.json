@@ -24,6 +24,7 @@
 		"@taiga-ui/cdk": "^4.17.0",
 		"@taiga-ui/core": "^4.17.0",
 		"@taiga-ui/icons": "^4.17.0",
+		"@taiga-ui/icons-fontawesome": "^4.17.0",
 		"@taiga-ui/kit": "^4.17.0",
 		"@taiga-ui/layout": "^4.17.0",
 		"@taiga-ui/legacy": "^4.17.0",

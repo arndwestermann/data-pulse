@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { TuiThemeColorService } from '@taiga-ui/cdk';
 import { TuiRoot } from '@taiga-ui/core';
 
 @Component({
@@ -17,4 +18,10 @@ import { TuiRoot } from '@taiga-ui/core';
 		}
 	`,
 })
-export class AppComponent {}
+export class AppComponent implements OnInit {
+	private readonly theme = inject(TuiThemeColorService);
+
+	public ngOnInit(): void {
+		this.theme.color = '#393D47';
+	}
+}

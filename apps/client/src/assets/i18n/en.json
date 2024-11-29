@@ -1,1 +1,58 @@
-{}
+{
+	"general": {
+		"save": "Save",
+		"yes": "Yes",
+		"no": "No"
+	},
+	"routes": {
+		"records": "Records",
+		"heatmap": "Heatmap",
+		"heatmapV2": "Heatmap V2"
+	},
+	"records": {
+		"id": "Id",
+		"arrival": "Arrival",
+		"leaving": "Leaving",
+		"from": "From",
+		"to": "To",
+		"specialty": "Specialty",
+		"status": "Status",
+		"actions": "Actions"
+	},
+	"heatmap": {
+		"specialty": "Specialty",
+		"total": "Total",
+		"chooseRange": "Choose range",
+		"admissions": "Ad",
+		"discharges": "Dis"
+	},
+	"specialty": {
+		"internal": "Internal",
+		"su": "SU",
+		"internalKV": "Internal/KV",
+		"vascular": "Vascular",
+		"general": "General",
+		"trauma": "Trauma",
+		"internalCoro": "Internal/Coro",
+		"internalPVI": "Internal/PVI",
+		"suLyse": "SU/Lyse",
+		"ent": "ENT",
+		"neuro": "Neuro",
+		"psych": "Psych",
+		"internalPM": "Internal/PM",
+		"gyn": "Gyn",
+		"internalZVK": "Interal/ZVK",
+		"internalEPU": "Interal/EPU",
+		"internalPFO": "Interal/PFO",
+		"suNotcoro": "SU/Notcoro"
+	},
+	"dialogs": {
+		"confirmDelete": "Are you sure you want to delete this?",
+		"neverAskAgain": "Never ask again"
+	},
+	"status": {
+		"error": "Error",
+		"warning": "Warning",
+		"caution": "Caution"
+	}
+}

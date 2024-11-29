@@ -35,6 +35,7 @@ module.exports = [
 		// Override or add rules here
 		rules: {
 			'@angular-eslint/template/elements-content': 'off',
+			'@angular-eslint/template/label-has-associated-control': 'off',
 		},
 	},
 ];

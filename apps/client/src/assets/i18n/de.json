@@ -1,1 +1,58 @@
-{}
+{
+	"general": {
+		"save": "Speichern",
+		"yes": "Ja",
+		"no": "Nein"
+	},
+	"routes": {
+		"records": "Archiv",
+		"heatmap": "Heatmap",
+		"heatmapV2": "Heatmap V2"
+	},
+	"records": {
+		"id": "Aufnahmenummer",
+		"arrival": "Zugang",
+		"leaving": "Abgang",
+		"from": "Von",
+		"to": "Nach",
+		"specialty": "Fachgebiet",
+		"status": "Status",
+		"actions": "Aktionen"
+	},
+	"heatmap": {
+		"specialty": "Fachgebiet",
+		"total": "Summe",
+		"chooseRange": "Datumsbereich auswählen",
+		"admissions": "Zu",
+		"discharges": "Ab"
+	},
+	"specialty": {
+		"internal": "Innere",
+		"su": "SU",
+		"internalKV": "Innere/KV",
+		"vascular": "Gefäß",
+		"general": "Allgemein",
+		"trauma": "Trauma",
+		"internalCoro": "Innere/Coro",
+		"internalPVI": "Innere/PVI",
+		"suLyse": "SU/Lyse",
+		"ent": "HNO",
+		"neuro": "Neuro",
+		"psych": "Psych",
+		"internalPM": "Innere/PM",
+		"gyn": "Gyn",
+		"internalZVK": "Inneral/ZVK",
+		"internalEPU": "Inneral/EPU",
+		"internalPFO": "Inneral/PFO",
+		"suNotcoro": "SU/Notcoro"
+	},
+	"dialogs": {
+		"confirmDelete": "Wirklich löschen?",
+		"neverAskAgain": "Nicht mehr fragen"
+	},
+	"status": {
+		"error": "Fehler",
+		"warning": "Warnung",
+		"caution": "Achtung"
+	}
+}

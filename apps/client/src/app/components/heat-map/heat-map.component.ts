@@ -226,7 +226,9 @@ export class HeatMapComponent {
 
 	public readonly sumSpecialty = computed(() => this.groupedBySpecialty().reduce((acc, curr) => acc + curr.value, 0));
 
-	public openDialog(event: { name: string; value: number; label: string; series: string; data: Date }): void {
+	public openDialog(event: { name: string; value: string | number; label: string; series: string; data: Date }): void {
+		if (typeof event.value === 'string' && event.value.includes('data')) return;
+
 		const context: IHeatmapDetailDialogContext = {
 			day: event.data,
 			records: this.heatMap().find((item) => item.key === event.data)?.value[+event.series.split(':')[0]] ?? [],

@@ -1,9 +1,19 @@
-import { ApplicationConfig, provideZoneChangeDetection, isDevMode, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, isDevMode, APP_INITIALIZER, importProvidersFrom, provideExperimentalZonelessChangeDetection } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
 import { provideHttpClient } from '@angular/common/http';
 import { TranslocoHttpLoader } from './transloco-loader';
 import { provideTransloco, TranslocoService } from '@jsverse/transloco';
+import { NG_EVENT_PLUGINS } from '@taiga-ui/event-plugins';
+import { TuiDialog } from '@taiga-ui/core';
+
+import localeEnGB from '@angular/common/locales/en-GB';
+import localeDeDE from '@angular/common/locales/de';
+
+registerLocaleData(localeEnGB, 'en-GB');
+registerLocaleData(localeDeDE, 'de-DE');
 
 export function initializeApplication(translocoService: TranslocoService): () => void {
 	return () => translocoService.setActiveLang(navigator.language.split('-')[0]);
@@ -11,7 +21,8 @@ export function initializeApplication(translocoService: TranslocoService): () =>
 
 export const appConfig: ApplicationConfig = {
 	providers: [
-		provideZoneChangeDetection({ eventCoalescing: true }),
+		provideAnimations(),
+		provideExperimentalZonelessChangeDetection(),
 		provideRouter(appRoutes),
 		provideHttpClient(),
 		provideTransloco({
@@ -24,6 +35,8 @@ export const appConfig: ApplicationConfig = {
 			},
 			loader: TranslocoHttpLoader,
 		}),
+		importProvidersFrom(TuiDialog),
+		NG_EVENT_PLUGINS,
 		{
 			provide: APP_INITIALIZER,
 			useFactory: initializeApplication,

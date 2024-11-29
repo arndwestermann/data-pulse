@@ -13,7 +13,7 @@
 				"outputPath": "dist/apps/client",
 				"index": "apps/client/src/index.html",
 				"browser": "apps/client/src/main.ts",
-				"polyfills": ["zone.js"],
+				"polyfills": [],
 				"tsConfig": "apps/client/tsconfig.app.json",
 				"inlineStyleLanguage": "scss",
 				"assets": [
@@ -26,9 +26,20 @@
 						"input": "apps/client/src/assets",
 						"output": "./assets"
 					},
+					{
+						"glob": "**/*",
+						"input": "node_modules/@taiga-ui/icons/src",
+						"output": "assets/taiga-ui/icons"
+					},
+					"apps/client/src/favicon.ico",
 					"apps/client/src/.htaccess"
 				],
-				"styles": ["apps/client/src/styles.scss"],
+				"styles": [
+					"@taiga-ui/core/styles/taiga-ui-theme.less",
+					"@taiga-ui/core/styles/taiga-ui-fonts.less",
+					"@taiga-ui/addon-mobile/styles/taiga-ui-mobile.less",
+					"apps/client/src/styles.scss"
+				],
 				"scripts": []
 			},
 			"configurations": {

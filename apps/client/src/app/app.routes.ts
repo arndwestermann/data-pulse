@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { NavigationComponent, RecordsComponent } from './components';
+import { HeatMapComponent, NavigationComponent, RecordsComponent } from './components';
 
 export const appRoutes: Route[] = [
 	{
@@ -12,6 +12,14 @@ export const appRoutes: Route[] = [
 				data: {
 					translationKey: 'records',
 					icon: 'table-list',
+				},
+			},
+			{
+				path: 'heatmap',
+				component: HeatMapComponent,
+				data: {
+					translationKey: 'heatmap',
+					icon: 'fire',
 				},
 			},
 			{

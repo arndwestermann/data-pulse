@@ -4,7 +4,8 @@
 	"license": "MIT",
 	"scripts": {
 		"start": "nx run client:serve",
-		"api": "nx run api:serve"
+		"api": "nx run api:serve",
+		"api:build": "nx run api:build && cp .env.example ./dist/apps/api/.env"
 	},
 	"private": true,
 	"dependencies": {

@@ -12,9 +12,9 @@ export class UserController {
 	create(@Body() createUserDto: CreateUserDto) {
 		return this.userService.create(createUserDto).pipe(
 			map((value) => {
-				if ('uuid' in value) return value;
+				if (typeof value === 'object') return value;
 
-				switch (value.code) {
+				switch (value) {
 					case 'ER_DUP_ENTRY':
 						throw new BadRequestException('User already exists');
 					default:

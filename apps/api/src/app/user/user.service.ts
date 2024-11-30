@@ -4,13 +4,13 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
-import { from, map, Observable, of, switchMap } from 'rxjs';
+import { catchError, from, map, Observable, of, switchMap } from 'rxjs';
 
 @Injectable()
 export class UserService {
 	constructor(@InjectRepository(User) private readonly userRepository: Repository<User>) {}
 
-	public create({ email, password, username }: CreateUserDto): Observable<User> {
+	public create({ email, password, username }: CreateUserDto): Observable<User | { [key: string]: unknown }> {
 		const user = this.userRepository.create({
 			email,
 			hashedPassword: password,
@@ -21,6 +21,9 @@ export class UserService {
 			map((user) => {
 				delete user.hashedPassword;
 				return user;
+			}),
+			catchError((err) => {
+				return of(err);
 			}),
 		);
 	}

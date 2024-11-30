@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { map } from 'rxjs';
 
 @Controller('user')
 export class UserController {
@@ -9,7 +10,18 @@ export class UserController {
 
 	@Post()
 	create(@Body() createUserDto: CreateUserDto) {
-		return this.userService.create(createUserDto);
+		return this.userService.create(createUserDto).pipe(
+			map((value) => {
+				if ('uuid' in value) return value;
+
+				switch (value.code) {
+					case 'ER_DUP_ENTRY':
+						throw new BadRequestException('User already exists');
+					default:
+						throw new InternalServerErrorException();
+				}
+			}),
+		);
 	}
 
 	@Get()

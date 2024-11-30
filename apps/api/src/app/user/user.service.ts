@@ -39,9 +39,11 @@ export class UserService {
 		);
 	}
 
-	public findOne(uuid: string): Observable<User> {
+	public findOne(uuid: string): Observable<User | null> {
 		return from(this.userRepository.findOne({ where: { uuid } })).pipe(
-			map((user) => {
+			map((user: User | null) => {
+				if (!user) return null;
+
 				delete user.hashedPassword;
 				return user;
 			}),

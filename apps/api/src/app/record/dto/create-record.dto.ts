@@ -5,5 +5,5 @@ export class CreateRecordDto {
 	from: string;
 	to: string;
 	specialty: string;
-	userUUID: string;
+	user: string;
 }

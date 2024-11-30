@@ -1,6 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { User } from '../../user/entities/user.entity';
 
-@Entity()
+@Entity({ name: 'records' })
 export class Record {
 	@PrimaryGeneratedColumn('uuid')
 	uuid: string;
@@ -23,6 +24,7 @@ export class Record {
 	@Column()
 	specialty: string;
 
-	@Column()
-	userUUID: string;
+	@ManyToOne(() => User, { cascade: true })
+	@JoinColumn({ name: 'user' })
+	user: User;
 }

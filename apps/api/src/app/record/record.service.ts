@@ -4,28 +4,52 @@ import { UpdateRecordDto } from './dto/update-record.dto';
 import { Record } from './entities/record.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { from, Observable, of, switchMap } from 'rxjs';
+import { from, map, Observable, of, switchMap } from 'rxjs';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class RecordService {
-	constructor(@InjectRepository(Record) private readonly recordRepository: Repository<Record>) {}
+	constructor(
+		@InjectRepository(Record) private readonly recordRepository: Repository<Record>,
+		private readonly userService: UserService,
+	) {}
 
 	public create(createRecordDto: CreateRecordDto): Observable<Record> {
-		const record = this.recordRepository.create(createRecordDto);
+		return this.userService.findOne(createRecordDto.user).pipe(
+			switchMap((user) => {
+				const record = this.recordRepository.create({
+					...createRecordDto,
+					user,
+				});
 
-		return from(this.recordRepository.save(record));
+				return from(this.recordRepository.save(record));
+			}),
+		);
 	}
 
 	public findAll(): Observable<Record[]> {
-		return from(this.recordRepository.find());
+		return from(this.recordRepository.find({ relations: ['user'] })).pipe(
+			map((records) =>
+				records.map((record) => {
+					delete record.user.hashedPassword;
+					return record;
+				}),
+			),
+		);
 	}
 
 	public findOne(uuid: string) {
-		return from(this.recordRepository.findOne({ where: { uuid } }));
+		return from(this.recordRepository.findOne({ where: { uuid }, relations: ['user'] })).pipe(
+			map((record) => {
+				delete record.user.hashedPassword;
+				return record;
+			}),
+		);
 	}
 
 	public update(uuid: string, updateRecordDto: UpdateRecordDto) {
-		return from(this.recordRepository.update(uuid, updateRecordDto)).pipe(
+		return this.userService.findOne(updateRecordDto.user).pipe(
+			switchMap((user) => from(this.recordRepository.update(uuid, { ...updateRecordDto, user }))),
 			switchMap((value) => {
 				if ((value.affected ?? 0) > 0) return this.findOne(uuid);
 

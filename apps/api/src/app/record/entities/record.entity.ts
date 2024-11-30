@@ -24,7 +24,7 @@ export class Record {
 	@Column()
 	specialty: string;
 
-	@ManyToOne(() => User, { cascade: true })
+	@ManyToOne(() => User, { cascade: true, onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'user' })
 	user: User;
 }

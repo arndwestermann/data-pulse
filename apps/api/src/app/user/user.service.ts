@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -8,9 +9,9 @@ import { catchError, from, map, Observable, of, switchMap } from 'rxjs';
 
 @Injectable()
 export class UserService {
-	constructor(@InjectRepository(User) private readonly userRepository: Repository<User>) {}
+	constructor(@InjectRepository(User) private readonly userRepository: Repository<User | null>) {}
 
-	public create({ email, password, username }: CreateUserDto): Observable<User | { [key: string]: unknown }> {
+	public create({ email, password, username }: CreateUserDto): Observable<User | string> {
 		const user = this.userRepository.create({
 			email,
 			hashedPassword: password,
@@ -22,8 +23,8 @@ export class UserService {
 				delete user.hashedPassword;
 				return user;
 			}),
-			catchError((err) => {
-				return of(err);
+			catchError((err: any) => {
+				return of(err.code);
 			}),
 		);
 	}
@@ -43,6 +44,19 @@ export class UserService {
 		return from(this.userRepository.findOne({ where: { uuid } })).pipe(
 			map((user: User | null) => {
 				if (!user) return null;
+
+				delete user.hashedPassword;
+				return user;
+			}),
+		);
+	}
+
+	public findOneByUsername(username: string, includePassword = false): Observable<User | null> {
+		return from(this.userRepository.findOne({ where: { username } })).pipe(
+			map((user: User | null) => {
+				if (!user) return null;
+
+				if (includePassword) return user;
 
 				delete user.hashedPassword;
 				return user;

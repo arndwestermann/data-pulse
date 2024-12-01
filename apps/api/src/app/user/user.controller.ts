@@ -31,7 +31,7 @@ export class UserController {
 
 	@Get(':uuid')
 	findOne(@Param('uuid') uuid: string) {
-		return this.userService.findOne(uuid).pipe(
+		return this.userService.findOneById(uuid).pipe(
 			map((value) => {
 				if (!value) throw new BadRequestException('User not found');
 

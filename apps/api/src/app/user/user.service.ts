@@ -40,7 +40,7 @@ export class UserService {
 		);
 	}
 
-	public findOne(uuid: string): Observable<User | null> {
+	public findOneById(uuid: string): Observable<User | null> {
 		return from(this.userRepository.findOne({ where: { uuid } })).pipe(
 			map((user: User | null) => {
 				if (!user) return null;
@@ -67,7 +67,7 @@ export class UserService {
 	public update(uuid: string, updateUserDto: UpdateUserDto) {
 		return from(this.userRepository.update(uuid, updateUserDto)).pipe(
 			switchMap((value) => {
-				if ((value.affected ?? 0) > 0) return this.findOne(uuid);
+				if ((value.affected ?? 0) > 0) return this.findOneById(uuid);
 
 				return of(null);
 			}),

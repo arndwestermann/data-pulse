@@ -5,5 +5,4 @@ export class CreateRecordDto {
 	from: string;
 	to: string;
 	specialty: string;
-	user: string;
 }

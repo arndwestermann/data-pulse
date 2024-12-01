@@ -39,7 +39,7 @@ export class AuthenticationService {
 	}
 
 	public register(request: RegisterRequestDto): Observable<IAccessToken | string> {
-		return this.userService.findOne(request.username).pipe(
+		return this.userService.findOneById(request.username).pipe(
 			switchMap((user: User | null) => {
 				if (user) return of('ER_DUP_ENTRY');
 

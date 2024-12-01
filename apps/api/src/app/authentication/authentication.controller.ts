@@ -1,9 +1,9 @@
-import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
-import { User } from '../user/entities/user.entity';
+import { User as UserEntity } from '../user/entities/user.entity';
 import { RegisterRequestDto } from './dto';
 import { AuthGuard } from '@nestjs/passport';
-import { Public } from './decorators';
+import { Public, User } from './decorators';
 
 @Public()
 @Controller('auth')
@@ -12,7 +12,7 @@ export class AuthenticationController {
 
 	@UseGuards(AuthGuard('local'))
 	@Post('login')
-	public login(@Request() user: User) {
+	public login(@User() user: UserEntity) {
 		return this.authenticationService.login(user);
 	}
 

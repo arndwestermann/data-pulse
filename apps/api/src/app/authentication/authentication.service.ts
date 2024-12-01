@@ -18,7 +18,7 @@ export class AuthenticationService {
 	) {}
 
 	async validate(username: string, password: string): Promise<User> {
-		const errorMessage = 'Invalid username or password!';
+		const errorMessage = 'Invalid username or password';
 		const user: User = await firstValueFrom(this.userService.findOneByUsername(username, true));
 		if (!user) {
 			throw new BadRequestException(errorMessage);

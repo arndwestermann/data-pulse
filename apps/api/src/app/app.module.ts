@@ -14,16 +14,17 @@ import { JwtGuard } from './authentication/guards';
 		ConfigModule.forRoot({
 			isGlobal: true,
 		}),
-		TypeOrmModule.forRoot({
-			type: 'mariadb',
-			host: process.env.DB_HOST || 'localhost',
-			port: Number(process.env.DB_PORT) || 3306,
-			username: process.env.MARIADB_USER,
-			password: process.env.MARIADB_PASSWORD,
-			database: process.env.MARIADB_DATABASE,
-			entities: [__dirname + '/**/*.entity{.ts,.js}'],
-			synchronize: true,
-			autoLoadEntities: true,
+		TypeOrmModule.forRootAsync({
+			useFactory: () => ({
+				type: 'mariadb',
+				host: process.env.DB_HOST || 'localhost',
+				port: Number(process.env.DB_PORT) || 3306,
+				username: process.env.MARIADB_USER,
+				password: process.env.MARIADB_PASSWORD,
+				database: process.env.MARIADB_DATABASE,
+				autoLoadEntities: true,
+				synchronize: false,
+			}),
 		}),
 		UserModule,
 		RecordModule,

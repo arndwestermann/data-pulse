@@ -1,12 +1,14 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { compareSync, hash } from 'bcrypt';
+import { compareSync } from 'bcrypt';
 import { UserService } from '../user/user.service';
-import { firstValueFrom, from, map, Observable, of, switchMap } from 'rxjs';
+import { firstValueFrom, from, Observable, of, switchMap } from 'rxjs';
 import { User } from '../user/entities/user.entity';
 import { IAccessToken } from './models';
 import { RegisterRequestDto } from './dto';
 import { ConfigService } from '@nestjs/config';
+import { IUserResponse } from '../user/dto/user.response';
+import { mapUserToResponse } from '../shared';
 
 @Injectable()
 export class AuthenticationService {
@@ -17,7 +19,7 @@ export class AuthenticationService {
 		private readonly configService: ConfigService,
 	) {}
 
-	async validate(username: string, password: string): Promise<User> {
+	async validate(username: string, password: string): Promise<IUserResponse> {
 		const errorMessage = 'Invalid username or password';
 		const user: User = await firstValueFrom(this.userService.findOneByUsername(username, true));
 		if (!user) {
@@ -27,11 +29,11 @@ export class AuthenticationService {
 		if (!isMatch) {
 			throw new BadRequestException(errorMessage);
 		}
-		return user;
+		return mapUserToResponse(user);
 	}
 
-	public login(user: User): Observable<IAccessToken> {
-		const payload = { username: user.username, email: user.email, sub: user.uuid };
+	public login(user: IUserResponse): Observable<IAccessToken> {
+		const payload = { username: user.username, email: user.email, roles: user.roles, sub: user.uuid };
 		return of({
 			accessToken: this.jwtService.sign(payload),
 			expiresIn: parseInt(this.configService.getOrThrow<string>('ACCESS_TOKEN_VALIDITY_DURATION_IN_SEC')),
@@ -43,9 +45,7 @@ export class AuthenticationService {
 			switchMap((user: User | null) => {
 				if (user) return of('ER_DUP_ENTRY');
 
-				return from(hash(request.password, 10)).pipe(
-					map((hashedPassword) => ({ email: request.email, password: hashedPassword, username: request.username })),
-				);
+				return of(request);
 			}),
 			switchMap((user) => {
 				if (typeof user === 'string') return of(user);
@@ -55,7 +55,7 @@ export class AuthenticationService {
 			switchMap((user) => {
 				if (typeof user === 'string') return of(user);
 
-				return this.login(user);
+				return this.login(mapUserToResponse(user));
 			}),
 		);
 	}

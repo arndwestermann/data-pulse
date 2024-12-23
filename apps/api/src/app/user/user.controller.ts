@@ -1,20 +1,27 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, BadRequestException, InternalServerErrorException, UseGuards, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { map } from 'rxjs';
+import { mapUserToResponse } from '../shared';
+import { Permission } from '../shared/decorators';
+import { AuthorizationGuard } from '../role/guards/authorization.guard';
+import { IUserResponse } from './dto/user.response';
 
+@UseGuards(AuthorizationGuard)
 @Controller('user')
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 
+	@Permission({ ressource: 'user', actions: ['create'] })
 	@Post()
 	create(@Body() createUserDto: CreateUserDto) {
 		return this.userService.create(createUserDto).pipe(
-			map((value) => {
-				if (typeof value === 'object') return value;
+			map((user) => {
+				if (typeof user === 'object') return mapUserToResponse(user);
 
-				switch (value) {
+				switch (user) {
 					case 'ER_DUP_ENTRY':
 						throw new BadRequestException('User already exists');
 					default:
@@ -24,29 +31,39 @@ export class UserController {
 		);
 	}
 
+	@Permission({ ressource: 'user', actions: ['read'] })
 	@Get()
 	findAll() {
-		return this.userService.findAll();
+		return this.userService.findAll().pipe(map((users) => users.map((user) => mapUserToResponse(user))));
 	}
 
+	@Permission({ ressource: 'user', actions: ['read'] })
 	@Get(':uuid')
 	findOne(@Param('uuid') uuid: string) {
 		return this.userService.findOneById(uuid).pipe(
-			map((value) => {
-				if (!value) throw new BadRequestException('User not found');
+			map((user) => {
+				if (!user) throw new BadRequestException('User not found');
 
-				return value;
+				return mapUserToResponse(user);
 			}),
 		);
 	}
 
+	@Permission({ ressource: 'user', actions: ['update'], roles: ['admin'] })
 	@Patch(':uuid')
-	update(@Param('uuid') uuid: string, @Body() updateUserDto: UpdateUserDto) {
-		return this.userService.update(uuid, updateUserDto);
+	update(@Res() res: Response<IUserResponse>, @Param('uuid') uuid: string, @Body() updateUserDto: UpdateUserDto) {
+		return this.userService.update(uuid, updateUserDto).pipe(
+			map((user) => {
+				if (!user) throw new BadRequestException('User not found');
+
+				return res.status(200).send(mapUserToResponse(user));
+			}),
+		);
 	}
 
+	@Permission({ ressource: 'user', actions: ['delete'] })
 	@Delete(':uuid')
-	remove(@Param('uuid') uuid: string) {
-		return this.userService.remove(uuid);
+	remove(@Res() res: Response<IUserResponse>, @Param('uuid') uuid: string) {
+		return this.userService.remove(uuid).pipe(map(() => res.status(201).send()));
 	}
 }

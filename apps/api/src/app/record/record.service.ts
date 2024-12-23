@@ -18,10 +18,14 @@ export class RecordService {
 	public create(createRecordDto: CreateRecordDto, user: string): Observable<Record> {
 		return this.userService.findOneById(user).pipe(
 			switchMap((user) => {
-				const record = this.recordRepository.create({
-					...createRecordDto,
-					user,
-				});
+				const record = new Record();
+				record.id = createRecordDto.id;
+				record.arrival = createRecordDto.arrival;
+				record.leaving = createRecordDto.leaving;
+				record.from = createRecordDto.from;
+				record.to = createRecordDto.to;
+				record.specialty = createRecordDto.specialty;
+				record.user = user;
 
 				return from(this.recordRepository.save(record));
 			}),
@@ -53,13 +57,20 @@ export class RecordService {
 		);
 	}
 
-	public update(uuid: string, updateRecordDto: UpdateRecordDto, user: string) {
+	public update(uuid: string, updateRecordDto: UpdateRecordDto, user: string): Observable<Record | null> {
 		return this.userService.findOneById(user).pipe(
-			switchMap((user) => from(this.recordRepository.update(uuid, { ...updateRecordDto, user }))),
-			switchMap((value) => {
-				if ((value.affected ?? 0) > 0) return this.findOne(uuid, user);
+			switchMap((user) => this.findOne(uuid, user.uuid)),
+			switchMap((record) => {
+				if (!record) return of(null);
 
-				return of(null);
+				if (updateRecordDto.id) record.id = updateRecordDto.id;
+				if (updateRecordDto.arrival) record.arrival = updateRecordDto.arrival;
+				if (updateRecordDto.leaving) record.leaving = updateRecordDto.leaving;
+				if (updateRecordDto.from) record.from = updateRecordDto.from;
+				if (updateRecordDto.to) record.to = updateRecordDto.to;
+				if (updateRecordDto.specialty) record.specialty = updateRecordDto.specialty;
+
+				return from(this.recordRepository.save(record));
 			}),
 		);
 	}

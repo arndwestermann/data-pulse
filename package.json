@@ -5,8 +5,8 @@
 	"scripts": {
 		"start": "nx run client:serve",
 		"api": "nx run api:serve",
-		"api:build": "nx run api:build && cp .env ./dist/apps/api/.env && npm run migration:build",
-		"migration:build": "npx tsc ./apps/api/src/database/*.ts ./apps/api/src/database/**/*.ts --outDir ./dist/apps/api/database",
+		"api:build": "nx run api:build && cp .env ./dist/apps/api/.env",
+		"migration:build": "npm run api:build && npx tsc ./apps/api/src/database/*.ts ./apps/api/src/database/**/*.ts --outDir ./dist/apps/api/database",
 		"migration:generate": "PRODUCTION=false npm run migration:build && npx ts-node-dev -P ./apps/api/tsconfig.app.json ./node_modules/typeorm/cli.js migration:generate ./apps/api/src/database/migrations/${npm_config_name} -d ./apps/api/src/database/database.config.ts",
 		"migration:up": "PRODUCTION=true typeorm -d ./dist/apps/api/database/database.config.js migration:run",
 		"migration:down": "PRODUCTION=true typeorm -d ./dist/apps/api/database/database.config.js migration:revert"
@@ -44,6 +44,7 @@
 		"@taiga-ui/layout": "^4.17.0",
 		"@taiga-ui/legacy": "^4.17.0",
 		"@taiga-ui/polymorpheus": "^4.7.4",
+		"@types/express": "^5.0.0",
 		"axios": "^1.7.8",
 		"bcrypt": "^5.1.1",
 		"d3-array": "^3.2.4",

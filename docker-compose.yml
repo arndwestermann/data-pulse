@@ -17,6 +17,33 @@ services:
       - db-data-pulse:/var/lib/mysql
     networks:
       - data-pulse
+  api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    container_name: api
+    depends_on:
+      db:
+        condition: service_started
+        restart: true
+    ports:
+      - 3000:3000
+    networks:
+      - data-pulse
+  client:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+    container_name: client
+    depends_on:
+      db:
+        condition: service_started
+      api:
+        condition: service_started
+    ports:
+      - 80:80
+    networks:
+      - data-pulse
 networks:
   data-pulse:
 volumes:

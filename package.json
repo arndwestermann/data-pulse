@@ -31,7 +31,7 @@
 		"@nestjs/passport": "^10.0.3",
 		"@nestjs/platform-express": "^10.4.12",
 		"@nestjs/typeorm": "^10.0.2",
-		"@swimlane/ngx-charts": "^21.0.0",
+		"@swimlane/ngx-charts": "^21.1.2",
 		"@taiga-ui/addon-charts": "^4.17.0",
 		"@taiga-ui/addon-commerce": "^4.17.0",
 		"@taiga-ui/addon-mobile": "^4.17.0",

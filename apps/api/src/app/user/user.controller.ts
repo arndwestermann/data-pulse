@@ -40,12 +40,6 @@ export class UserController {
 	}
 
 	@Permission({ ressource: 'user', actions: ['read'] })
-	@Get('me/has-refresh-token')
-	hasRefreshToken(@User() user: TokenPayload) {
-		return this.userService.userHasRefreshToken(user.sub);
-	}
-
-	@Permission({ ressource: 'user', actions: ['read'] })
 	@Get(':uuid')
 	findOne(@Param('uuid') uuid: string, @User() user: TokenPayload) {
 		const id = uuid === 'me' ? user.sub : uuid;

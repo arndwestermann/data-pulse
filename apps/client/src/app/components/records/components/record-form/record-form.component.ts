@@ -32,7 +32,6 @@ const taigaUiImports = [
 
 @Component({
 	selector: 'dp-record-form',
-	standalone: true,
 	imports: [...angularImports, ...firstPartyImports, ...thirdPartyImports, ...taigaUiImports],
 	template: `
 		<form class="flex flex-col space-y-2" [formGroup]="form" *transloco="let transloco">

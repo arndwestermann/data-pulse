@@ -18,7 +18,6 @@ interface Cell {
 @Component({
 	// eslint-disable-next-line @angular-eslint/component-selector
 	selector: 'g[dp-custom-heat-map-cell-series]',
-	standalone: true,
 	imports: [CustomHeatMapCellComponent, NgxChartsModule],
 	template: `
 		<svg:g

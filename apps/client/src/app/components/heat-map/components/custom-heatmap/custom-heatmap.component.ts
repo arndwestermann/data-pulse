@@ -26,7 +26,6 @@ interface RectItem {
 
 @Component({
 	selector: 'dp-custom-heatmap',
-	standalone: true,
 	imports: [NgxChartsModule, CustomHeatCellSeriesComponent],
 	template: `
 		<ngx-charts-chart

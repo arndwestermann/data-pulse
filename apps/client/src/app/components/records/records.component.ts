@@ -26,7 +26,6 @@ const taigaUiImports = [TuiButton, TuiIcon, TuiTable];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
 	selector: 'dp-records',
-	standalone: true,
 	imports: [...angularImports, ...taigaUiImports, ...thirdPartyImports],
 	template: `
 		<div class="flex flex-shrink-0 space-x-2">

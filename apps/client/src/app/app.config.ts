@@ -1,4 +1,11 @@
-import { ApplicationConfig, isDevMode, APP_INITIALIZER, importProvidersFrom, provideExperimentalZonelessChangeDetection } from '@angular/core';
+import {
+	ApplicationConfig,
+	isDevMode,
+	importProvidersFrom,
+	provideExperimentalZonelessChangeDetection,
+	inject,
+	provideAppInitializer,
+} from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -39,11 +46,9 @@ export const appConfig: ApplicationConfig = {
 		importProvidersFrom(TuiDialog),
 		NG_EVENT_PLUGINS,
 		{ provide: STORAGE_TOKEN, useValue: localStorage },
-		{
-			provide: APP_INITIALIZER,
-			useFactory: initializeApplication,
-			deps: [TranslocoService],
-			multi: true,
-		},
+		provideAppInitializer(() => {
+			const initializerFn = initializeApplication(inject(TranslocoService));
+			return initializerFn();
+		}),
 	],
 };

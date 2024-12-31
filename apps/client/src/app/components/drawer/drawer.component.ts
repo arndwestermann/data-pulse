@@ -23,7 +23,6 @@ import { isLTR, isIOS } from './utils';
 
 @Component({
 	selector: 'dp-drawer',
-	standalone: true,
 	imports: [NgClass, NgStyle],
 	template: `
 		<aside

@@ -7,7 +7,6 @@ import { FormsModule } from '@angular/forms';
 
 @Component({
 	selector: 'dp-confirm-delete',
-	standalone: true,
 	imports: [FormsModule, TuiButton, TuiCheckbox, TranslocoDirective],
 	template: `
 		<ng-container *transloco="let transloco">

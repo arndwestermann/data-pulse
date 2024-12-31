@@ -4,7 +4,6 @@ import { TuiThemeColorService } from '@taiga-ui/cdk';
 import { TuiRoot } from '@taiga-ui/core';
 
 @Component({
-	standalone: true,
 	imports: [RouterModule, TuiRoot],
 	selector: 'dp-root',
 	template: `

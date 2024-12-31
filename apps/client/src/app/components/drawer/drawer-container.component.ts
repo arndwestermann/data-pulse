@@ -23,7 +23,6 @@ import { DrawerComponent } from './drawer.component';
 // Based on https://github.com/angular/material2/tree/master/src/lib/sidenav
 @Component({
 	selector: 'dp-drawer-container',
-	standalone: true,
 	imports: [NgClass, NgStyle],
 	template: `
 		@if (showBackdrop) {

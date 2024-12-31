@@ -12,7 +12,6 @@ const thirdPartyImports = [TranslocoDirective];
 
 @Component({
 	selector: 'dp-navigation',
-	standalone: true,
 	imports: [DrawerContainerComponent, DrawerComponent, ...angularImports, ...taigaUiImports, ...thirdPartyImports],
 	templateUrl: './navigation.component.html',
 	styles: `

@@ -32,7 +32,6 @@ interface IHeatmapSeries<T> {
 
 @Component({
 	selector: 'dp-heat-map',
-	standalone: true,
 	imports: [FormsModule, TuiInputDateRangeModule, TuiButton, TuiIcon, TranslocoDirective, CustomHeatmapComponent],
 	template: `
 		<ng-container *transloco="let transloco">

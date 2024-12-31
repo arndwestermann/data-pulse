@@ -7,7 +7,6 @@ import { IHeatmapDetailDialogContext } from '../../models/heatmap-detail-dialog.
 
 @Component({
 	selector: 'dp-heatmap-detail-dialog',
-	standalone: true,
 	imports: [DatePipe, TuiCardLarge, TuiAppearance, TuiHeader, TuiTitle],
 	template: `
 		<header tuiHeader>

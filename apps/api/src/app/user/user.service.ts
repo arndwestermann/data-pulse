@@ -8,11 +8,13 @@ import { Repository } from 'typeorm';
 import { catchError, forkJoin, from, map, Observable, of, switchMap } from 'rxjs';
 import { hash } from 'bcrypt';
 import { RoleService } from '../role/role.service';
+import { UserHasRefreshToken } from './entities/user-has-refresh-token.entity';
 
 @Injectable()
 export class UserService {
 	constructor(
-		@InjectRepository(User) private readonly userRepository: Repository<User | null>,
+		@InjectRepository(User) private readonly userRepository: Repository<User>,
+		@InjectRepository(UserHasRefreshToken) private readonly userHasRefreshTokenRepository: Repository<UserHasRefreshToken>,
 		private readonly roleService: RoleService,
 	) {}
 
@@ -20,6 +22,7 @@ export class UserService {
 		const roles$ = (roles ?? ['user']).map((role) => this.roleService.findOne(role));
 
 		return forkJoin(roles$).pipe(
+			map((roles) => roles.filter((role) => role !== null)),
 			switchMap((roles) => from(hash(password, 10)).pipe(map((hash) => ({ hashedPassword: hash, roles })))),
 			map(({ hashedPassword, roles }) => {
 				const user = new User();
@@ -37,7 +40,9 @@ export class UserService {
 	}
 
 	public findAll(): Observable<User[]> {
-		return from(this.userRepository.find({ relations: ['roles', 'roles.permissions', 'roles.permissions.action', 'roles.permissions.resource'] }));
+		return from(
+			this.userRepository.find({ relations: ['roles', 'roles.permissions', 'roles.permissions.action', 'roles.permissions.resource'] }),
+		).pipe(map((users) => users.filter((user): user is User => user !== null)));
 	}
 
 	public findOneById(uuid: string): Observable<User | null> {
@@ -55,19 +60,16 @@ export class UserService {
 		);
 	}
 
-	public findOneByUsername(username: string, includePassword = false): Observable<User | null> {
+	public findOneByUsername(username: string): Observable<User | null> {
 		return from(
 			this.userRepository.findOne({
 				where: { username },
 				relations: ['roles', 'roles.permissions', 'roles.permissions.action', 'roles.permissions.resource'],
 			}),
 		).pipe(
-			map((user: User | null) => {
+			map((user) => {
 				if (!user) return null;
 
-				if (includePassword) return user;
-
-				delete user.hashedPassword;
 				return user;
 			}),
 		);
@@ -105,5 +107,38 @@ export class UserService {
 				else return of(null);
 			}),
 		);
+	}
+
+	public userHasRefreshToken(uuid: string): Observable<string | null> {
+		return from(
+			this.userHasRefreshTokenRepository.findOne({
+				where: {
+					user: uuid,
+				},
+			}),
+		).pipe(map((userHasRefreshToken) => userHasRefreshToken?.token ?? null));
+	}
+
+	public setRefreshToken(uuid: string, refreshToken: string): Observable<UserHasRefreshToken | null> {
+		return from(hash(refreshToken, 10)).pipe(
+			switchMap((hash) => this.findOneById(uuid).pipe(map((user) => ({ user, hash })))),
+			switchMap(({ user, hash }) => {
+				if (!user) return of(null);
+				const userHasRefreshToken = new UserHasRefreshToken();
+
+				userHasRefreshToken.userEntity = user;
+				userHasRefreshToken.token = hash;
+
+				return from(this.userHasRefreshTokenRepository.save(userHasRefreshToken));
+			}),
+		);
+	}
+
+	public deleteRefreshTokenById(uuid: string): Observable<unknown> {
+		return from(this.userHasRefreshTokenRepository.delete({ userEntity: { uuid } }));
+	}
+
+	public deleteRefreshTokenByToken(token: string): Observable<unknown> {
+		return from(this.userHasRefreshTokenRepository.delete({ token: token }));
 	}
 }

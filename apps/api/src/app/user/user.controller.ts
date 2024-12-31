@@ -8,6 +8,8 @@ import { mapUserToResponse } from '../shared';
 import { Permission } from '../shared/decorators';
 import { AuthorizationGuard } from '../role/guards/authorization.guard';
 import { IUserResponse } from './dto/user.response';
+import { TokenPayload } from '../authentication/models';
+import { User } from '../authentication/decorators';
 
 @UseGuards(AuthorizationGuard)
 @Controller('user')
@@ -38,9 +40,16 @@ export class UserController {
 	}
 
 	@Permission({ ressource: 'user', actions: ['read'] })
+	@Get('me/has-refresh-token')
+	hasRefreshToken(@User() user: TokenPayload) {
+		return this.userService.userHasRefreshToken(user.sub);
+	}
+
+	@Permission({ ressource: 'user', actions: ['read'] })
 	@Get(':uuid')
-	findOne(@Param('uuid') uuid: string) {
-		return this.userService.findOneById(uuid).pipe(
+	findOne(@Param('uuid') uuid: string, @User() user: TokenPayload) {
+		const id = uuid === 'me' ? user.sub : uuid;
+		return this.userService.findOneById(id).pipe(
 			map((user) => {
 				if (!user) throw new BadRequestException('User not found');
 

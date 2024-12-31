@@ -110,6 +110,8 @@
 		"@types/d3-transition": "^3.0.9",
 		"@types/jest": "^29.5.14",
 		"@types/node": "18.16.9",
+		"@types/passport-jwt": "^4.0.1",
+		"@types/passport-local": "^1.0.38",
 		"@typescript-eslint/utils": "^8.0.0",
 		"angular-eslint": "^18.4.2",
 		"autoprefixer": "^10.4.0",

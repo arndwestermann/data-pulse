@@ -4,27 +4,27 @@ import { User } from '../../user/entities/user.entity';
 @Entity({ name: 'records' })
 export class Record {
 	@PrimaryGeneratedColumn('uuid')
-	uuid: string;
+	uuid!: string;
 
 	@Column()
-	id: string;
+	id!: string;
 
 	@Column('datetime')
-	arrival: Date;
+	arrival!: Date;
 
 	@Column('datetime')
-	leaving: Date;
+	leaving!: Date;
 
 	@Column()
-	from: string;
+	from!: string;
 
 	@Column()
-	to: string;
+	to!: string;
 
 	@Column()
-	specialty: string;
+	specialty!: string;
 
 	@ManyToOne(() => User, { cascade: true, onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'user' })
-	user: User;
+	user!: User;
 }

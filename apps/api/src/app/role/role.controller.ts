@@ -16,8 +16,10 @@ export class RoleController {
 
 	@Permission({ ressource: 'role', actions: ['create'] })
 	@Post()
-	create(@Body() createRoleDto: CreateRoleDto) {
-		return this.roleService.create(createRoleDto).pipe(map((role) => mapRoleToResponse(role)));
+	create(@Res() res: Response<IRoleResponse>, @Body() createRoleDto: CreateRoleDto) {
+		return this.roleService
+			.create(createRoleDto)
+			.pipe(map((role) => res.status(role ? HttpStatus.CREATED : HttpStatus.NO_CONTENT).send(role ? mapRoleToResponse(role) : undefined)));
 	}
 
 	@Permission({ ressource: 'role', actions: ['create'] })

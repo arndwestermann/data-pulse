@@ -11,13 +11,15 @@ import { UserService } from '../user/user.service';
 export class RecordService {
 	private readonly logger = new Logger('RecordService');
 	constructor(
-		@InjectRepository(Record) private readonly recordRepository: Repository<Record | null>,
+		@InjectRepository(Record) private readonly recordRepository: Repository<Record>,
 		private readonly userService: UserService,
 	) {}
 
-	public create(createRecordDto: CreateRecordDto, user: string): Observable<Record> {
+	public create(createRecordDto: CreateRecordDto, user: string): Observable<Record | null> {
 		return this.userService.findOneById(user).pipe(
 			switchMap((user) => {
+				if (!user) return of(null);
+
 				const record = new Record();
 				record.id = createRecordDto.id;
 				record.arrival = createRecordDto.arrival;
@@ -59,7 +61,7 @@ export class RecordService {
 
 	public update(uuid: string, updateRecordDto: UpdateRecordDto, user: string): Observable<Record | null> {
 		return this.userService.findOneById(user).pipe(
-			switchMap((user) => this.findOne(uuid, user.uuid)),
+			switchMap((user) => (user ? this.findOne(uuid, user.uuid) : of(null))),
 			switchMap((record) => {
 				if (!record) return of(null);
 

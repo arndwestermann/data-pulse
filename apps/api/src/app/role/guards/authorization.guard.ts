@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IRoutePermission, PERMISSIONS_DECORATOR_KEY, TAction } from '../../shared/models';
-import { AccessTokenPayload } from '../../authentication/models';
+import { TokenPayload } from '../../authentication/models';
 import { Request } from 'express';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class AuthorizationGuard implements CanActivate {
 
 		if (!requiredPermissions) return false;
 
-		const request = context.switchToHttp().getRequest<Request & { user: AccessTokenPayload }>();
+		const request = context.switchToHttp().getRequest<Request & { user: TokenPayload }>();
 		const requestType = request.method;
 		const user = request.user;
 

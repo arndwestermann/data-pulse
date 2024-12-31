@@ -8,15 +8,15 @@ export class Permission {
 	@PrimaryColumn('varchar')
 	@ManyToOne(() => Role, (role) => role.permissions, { cascade: true, onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'role' })
-	role: Role;
+	role!: Role;
 
 	@PrimaryColumn('varchar')
 	@ManyToOne(() => Resource, (resource) => resource.permissions, { cascade: true, onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'resource' })
-	resource: Resource;
+	resource!: Resource;
 
 	@PrimaryColumn('varchar')
 	@ManyToOne(() => Action, (action) => action.permissions, { cascade: true, onDelete: 'CASCADE' })
 	@JoinColumn({ name: 'action' })
-	action: Action;
+	action!: Action;
 }

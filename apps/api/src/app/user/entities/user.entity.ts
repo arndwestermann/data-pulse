@@ -4,16 +4,16 @@ import { Role } from '../../role/entities';
 @Entity({ name: 'users' })
 export class User {
 	@PrimaryGeneratedColumn('uuid')
-	uuid: string;
+	uuid!: string;
 
 	@Column({ unique: true })
-	username: string;
+	username!: string;
 
 	@Column({ unique: true })
-	email: string;
+	email!: string;
 
 	@Column()
-	hashedPassword: string;
+	hashedPassword!: string;
 
 	@ManyToMany(() => Role, (role) => role.users, { eager: true })
 	@JoinTable({
@@ -21,5 +21,5 @@ export class User {
 		joinColumn: { name: 'user', referencedColumnName: 'uuid' },
 		inverseJoinColumn: { name: 'role', referencedColumnName: 'name' },
 	})
-	roles: Role[];
+	roles!: Role[];
 }

@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { compareSync } from 'bcrypt';
 import { UserService } from '../user/user.service';
-import { firstValueFrom, from, Observable, of, switchMap } from 'rxjs';
+import { firstValueFrom, from, map, Observable, of, switchMap } from 'rxjs';
 import { User } from '../user/entities/user.entity';
-import { IAccessToken } from './models';
+import { TokenPayload, IAccessToken } from './models';
 import { RegisterRequestDto } from './dto';
 import { ConfigService } from '@nestjs/config';
 import { IUserResponse } from '../user/dto/user.response';
@@ -21,7 +21,7 @@ export class AuthenticationService {
 
 	async validate(username: string, password: string): Promise<IUserResponse> {
 		const errorMessage = 'Invalid username or password';
-		const user: User = await firstValueFrom(this.userService.findOneByUsername(username, true));
+		const user: User | null = await firstValueFrom(this.userService.findOneByUsername(username));
 		if (!user) {
 			throw new BadRequestException(errorMessage);
 		}
@@ -33,16 +33,27 @@ export class AuthenticationService {
 	}
 
 	public login(user: IUserResponse): Observable<IAccessToken> {
-		const payload = { username: user.username, email: user.email, roles: user.roles, sub: user.uuid };
-		return of({
-			accessToken: this.jwtService.sign(payload),
-			expiresIn: parseInt(this.configService.getOrThrow<string>('ACCESS_TOKEN_VALIDITY_DURATION_IN_SEC')),
-		} satisfies IAccessToken);
+		const payload = { sub: user.uuid, roles: user.roles } satisfies Omit<TokenPayload, 'iat' | 'exp'>;
+
+		const accessTokenExpiresIn = parseInt(this.configService.getOrThrow<string>('ACCESS_TOKEN_VALIDITY_DURATION_IN_SEC'));
+		const refreshTokenExpiresIn = parseInt(this.configService.getOrThrow<string>('REFRESH_TOKEN_VALIDITY_DURATION_IN_SEC'));
+		const accessToken = this.jwtService.sign(payload, {
+			secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
+			expiresIn: accessTokenExpiresIn,
+		});
+		const refreshToken = this.jwtService.sign(payload, {
+			secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
+			expiresIn: refreshTokenExpiresIn,
+		});
+
+		return this.userService
+			.setRefreshToken(user.uuid, refreshToken)
+			.pipe(map(() => ({ accessToken, refreshToken, expiresIn: accessTokenExpiresIn }) satisfies IAccessToken));
 	}
 
 	public register(request: RegisterRequestDto): Observable<IAccessToken | string> {
 		return this.userService.findOneById(request.username).pipe(
-			switchMap((user: User | null) => {
+			switchMap((user) => {
 				if (user) return of('ER_DUP_ENTRY');
 
 				return of(request);
@@ -58,5 +69,57 @@ export class AuthenticationService {
 				return this.login(mapUserToResponse(user));
 			}),
 		);
+	}
+
+	public refresh(token: string, grandType: string): Observable<IAccessToken | null> {
+		return of(this.verify(grandType, token)).pipe(
+			switchMap((data) => {
+				if (!data.isValid) return this.logout(data.uuid).pipe(map(() => null));
+
+				return this.userService.userHasRefreshToken(data.uuid).pipe(map((hashedToken) => ({ uuid: data.uuid, hashedToken })));
+			}),
+			map((data) => {
+				if (!data?.hashedToken) return null;
+
+				const isMatch = compareSync(token, data.hashedToken);
+
+				return isMatch ? data.uuid : null;
+			}),
+			switchMap((uuid) => {
+				if (!uuid) return of(null);
+
+				return from(this.userService.findOneById(uuid)).pipe(
+					switchMap((user) => {
+						if (!user) return of(null);
+
+						return this.login(mapUserToResponse(user));
+					}),
+				);
+			}),
+		);
+	}
+
+	public logout(uuid: string) {
+		return this.userService.deleteRefreshTokenById(uuid);
+	}
+
+	private verify(grandType: string, token: string): { uuid: string; isValid: boolean } {
+		let uuid = '';
+		let isValid = false;
+		try {
+			uuid = this.jwtService.verify<TokenPayload>(token, {
+				secret: this.configService.get<string>(grandType === 'accessToken' ? 'JWT_ACCESS_TOKEN_SECRET' : 'JWT_REFRESH_TOKEN_SECRET'),
+			}).sub;
+			isValid = true;
+		} catch (error: unknown) {
+			if (error instanceof JsonWebTokenError) {
+				uuid = this.jwtService.decode<TokenPayload>(token).sub;
+
+				if (error instanceof TokenExpiredError) this.logger.log(`Token expired for ${uuid} at ${error.expiredAt}`);
+				else this.logger.log(error);
+			}
+		}
+
+		return { uuid, isValid };
 	}
 }

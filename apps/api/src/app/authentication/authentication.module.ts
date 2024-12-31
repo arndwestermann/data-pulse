@@ -12,7 +12,7 @@ import { JwtStrategy, LocalStrategy } from './strategy';
 		JwtModule.registerAsync({
 			imports: [ConfigModule],
 			useFactory: async (configService: ConfigService) => ({
-				secret: configService.get<string>('JWT_SECRET'),
+				secret: configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
 				signOptions: {
 					expiresIn: parseInt(configService.getOrThrow<string>('ACCESS_TOKEN_VALIDITY_DURATION_IN_SEC')),
 				},

@@ -15,7 +15,7 @@ export class RoleService {
 		@InjectRepository(Action) private readonly actionRepository: Repository<Action>,
 	) {}
 
-	public create(createRoleDto: CreateRoleDto): Observable<Role> {
+	public create(createRoleDto: CreateRoleDto): Observable<Role | null> {
 		const role = this.roleRepository.create({
 			name: createRoleDto.name,
 		});
@@ -28,14 +28,18 @@ export class RoleService {
 			),
 			switchMap(({ actions, resources }) => {
 				const permission$ = createRoleDto.resources.map((resource) => {
-					const permission = resource.actions.map((action) => {
+					const permissions = resource.actions.map((action) => {
 						const _resource = resources.find((res) => res.name === resource.name);
 						const _action = actions.find((act) => act.name === action);
+
+						if (!_resource || !_action) {
+							return null;
+						}
 
 						return this.createPermission(role, _resource, _action);
 					});
 
-					return from(this.permissionRepository.save(permission));
+					return from(this.permissionRepository.save(permissions.filter((permission) => permission !== null)));
 				});
 
 				return permission$.length > 0 ? forkJoin(permission$) : of(null);
@@ -108,7 +112,13 @@ export class RoleService {
 			from(this.roleRepository.findOne({ where: { name: role } })),
 			from(this.resourceRepository.findOne({ where: { name: resource } })),
 			from(this.actionRepository.findOne({ where: { name: action } })),
-		]).pipe(switchMap(([role, resource, action]) => from(this.permissionRepository.save(this.createPermission(role, resource, action)))));
+		]).pipe(
+			switchMap(([role, resource, action]) => {
+				if (!role || !resource || !action) return of(null);
+
+				return from(this.permissionRepository.save(this.createPermission(role, resource, action)));
+			}),
+		);
 	}
 
 	public deletePermission(role: string, resource: string, action: string) {
@@ -116,7 +126,13 @@ export class RoleService {
 			from(this.roleRepository.findOne({ where: { name: role } })),
 			from(this.resourceRepository.findOne({ where: { name: resource } })),
 			from(this.actionRepository.findOne({ where: { name: action } })),
-		]).pipe(switchMap(([role, resource, action]) => from(this.permissionRepository.delete({ role, resource, action }))));
+		]).pipe(
+			switchMap(([role, resource, action]) => {
+				if (!role || !resource || !action) return of(null);
+
+				return from(this.permissionRepository.delete({ role, resource, action }));
+			}),
+		);
 	}
 
 	private createPermission(role: Role, resource: Resource, action: Action): Permission {

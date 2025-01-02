@@ -48,7 +48,7 @@ export class AuthenticationService {
 
 		return this.userService
 			.setRefreshToken(user.uuid, refreshToken)
-			.pipe(map(() => ({ accessToken, refreshToken, expiresIn: accessTokenExpiresIn }) satisfies IAccessToken));
+			.pipe(map(() => ({ accessToken, refreshToken, accessTokenExpiresIn, refreshTokenExpiresIn }) satisfies IAccessToken));
 	}
 
 	public register(request: RegisterRequestDto): Observable<IAccessToken | string> {

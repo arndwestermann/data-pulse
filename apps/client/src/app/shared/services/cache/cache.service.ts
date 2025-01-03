@@ -1,5 +1,6 @@
 import { Injectable, inject, InjectionToken } from '@angular/core';
 import { restoreDates } from '../../utils';
+import { Observable, of } from 'rxjs';
 
 export const STORAGE_TOKEN = new InjectionToken<Storage>('STORAGE_TOKEN');
 
@@ -36,5 +37,15 @@ export class CacheService {
 		});
 
 		window.dispatchEvent(storageEvent);
+	}
+
+	public load<T>(key: string): Observable<T | null> {
+		return of(this.getItem<T>(key));
+	}
+
+	public save<T>(key: string, data: T): Observable<T> {
+		this.setItem(key, data);
+
+		return of(data);
 	}
 }

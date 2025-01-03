@@ -85,6 +85,7 @@
 		},
 		"@nx/angular:component": {
 			"style": "scss",
+			"prefix": "dp",
 			"changeDetection": "OnPush",
 			"displayBlock": true,
 			"standalone": true,

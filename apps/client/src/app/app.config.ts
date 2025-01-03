@@ -10,15 +10,18 @@ import { registerLocaleData } from '@angular/common';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { TranslocoHttpLoader } from './transloco-loader';
 import { provideTransloco, TranslocoService } from '@jsverse/transloco';
 import { NG_EVENT_PLUGINS } from '@taiga-ui/event-plugins';
 import { TuiDialog } from '@taiga-ui/core';
+import { TUI_LANGUAGE, TUI_GERMAN_LANGUAGE, TUI_ENGLISH_LANGUAGE } from '@taiga-ui/i18n';
 
 import localeEnGB from '@angular/common/locales/en-GB';
 import localeDeDE from '@angular/common/locales/de';
 import { STORAGE_TOKEN } from './shared/services';
+import { accessTokenInterceptor } from './shared/interceptors';
+import { distinctUntilChanged, map } from 'rxjs';
 
 registerLocaleData(localeEnGB, 'en-GB');
 registerLocaleData(localeDeDE, 'de-DE');
@@ -32,12 +35,11 @@ export const appConfig: ApplicationConfig = {
 		provideAnimations(),
 		provideExperimentalZonelessChangeDetection(),
 		provideRouter(appRoutes),
-		provideHttpClient(),
+		provideHttpClient(withInterceptors([accessTokenInterceptor])),
 		provideTransloco({
 			config: {
 				availableLangs: ['en', 'de'],
 				defaultLang: 'en',
-				// Remove this option if your application doesn't support changing language in runtime.
 				reRenderOnLangChange: true,
 				prodMode: !isDevMode(),
 			},
@@ -50,5 +52,21 @@ export const appConfig: ApplicationConfig = {
 			const initializerFn = initializeApplication(inject(TranslocoService));
 			return initializerFn();
 		}),
+		{
+			provide: TUI_LANGUAGE,
+			useFactory: (translocoService: TranslocoService) =>
+				translocoService.langChanges$.pipe(
+					distinctUntilChanged(),
+					map((lang) => {
+						switch (lang) {
+							case 'de':
+								return TUI_GERMAN_LANGUAGE;
+							default:
+								return TUI_ENGLISH_LANGUAGE;
+						}
+					}),
+				),
+			deps: [TranslocoService],
+		},
 	],
 };

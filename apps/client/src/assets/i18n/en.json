@@ -2,7 +2,8 @@
 	"general": {
 		"save": "Save",
 		"yes": "Yes",
-		"no": "No"
+		"no": "No",
+		"logout": "Logout"
 	},
 	"routes": {
 		"records": "Records",
@@ -25,6 +26,12 @@
 		"chooseRange": "Choose range",
 		"admissions": "Ad",
 		"discharges": "Dis"
+	},
+	"login": {
+		"username": "Username",
+		"password": "Password",
+		"login": "Login",
+		"wrongCredentials": "Username or password is incorrect"
 	},
 	"specialty": {
 		"internal": "Internal",
@@ -54,5 +61,8 @@
 		"error": "Error",
 		"warning": "Warning",
 		"caution": "Caution"
+	},
+	"validation": {
+		"required": "{{ field }} is required"
 	}
 }

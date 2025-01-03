@@ -38,6 +38,7 @@
 		"@taiga-ui/addon-table": "^4.19.0",
 		"@taiga-ui/cdk": "^4.19.0",
 		"@taiga-ui/core": "^4.19.0",
+		"@taiga-ui/i18n": "^4.19.0",
 		"@taiga-ui/icons": "^4.19.0",
 		"@taiga-ui/icons-fontawesome": "^4.19.0",
 		"@taiga-ui/kit": "^4.19.0",

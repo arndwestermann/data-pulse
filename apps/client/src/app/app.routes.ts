@@ -1,10 +1,12 @@
 import { Route } from '@angular/router';
 import { HeatMapComponent, NavigationComponent, RecordsComponent } from './components';
+import { isAuthenticatedGuard } from './shared/guards';
 
 export const appRoutes: Route[] = [
 	{
 		path: '',
 		component: NavigationComponent,
+		canActivate: [isAuthenticatedGuard],
 		children: [
 			{
 				path: 'records',
@@ -28,5 +30,10 @@ export const appRoutes: Route[] = [
 				pathMatch: 'full',
 			},
 		],
+	},
+	{
+		path: 'login',
+		canActivate: [isAuthenticatedGuard],
+		loadComponent: () => import('./components/login/login.component').then((c) => c.LoginComponent),
 	},
 ];

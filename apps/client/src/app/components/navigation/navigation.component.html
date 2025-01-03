@@ -1,9 +1,25 @@
 <header class="flex flex-none h-12 border-b px-2 py-1 justify-between items-center" [style.background-color]="'var(--tui-theme-color)'">
-	<div>
+	<div class="flex w-full justify-between">
 		<button tuiButton type="button" appearance="flat" size="s" (click)="isDrawerOpen.set(!isDrawerOpen())">
 			<i class="fa-solid fa-bars text-lg"></i>
 			<tui-icon icon="@tui.fa.solid.bars" />
 		</button>
+
+		@let initials = username() | tuiInitials;
+		<tui-avatar
+			[tuiDropdown]="dropdown"
+			[(tuiDropdownOpen)]="isProfileDropdownOpen"
+			class="cursor-pointer"
+			[src]="initials"
+			[style.background]="username() | tuiAutoColor"
+			size="s" />
+		<ng-template #dropdown>
+			<tui-data-list class="flex items-center" *transloco="let transloco; prefix: 'general'">
+				<button tuiOption (click)="logout()">
+					<span class="w-full">{{ transloco('logout') }}</span>
+				</button>
+			</tui-data-list>
+		</ng-template>
 	</div>
 </header>
 <dp-drawer-container>

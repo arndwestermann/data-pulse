@@ -230,7 +230,7 @@ export class RecordsComponent {
 				});
 			}
 
-			// this.data.update((value) => value.concat(records));
+			this.recordService.addRecords(records);
 		};
 
 		fileReader.readAsText(file);

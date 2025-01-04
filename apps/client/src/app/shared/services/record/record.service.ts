@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../../environments/environment';
-import { filter, map, merge, of, scan, shareReplay, startWith, Subject, switchMap } from 'rxjs';
+import { filter, forkJoin, from, map, merge, of, scan, shareReplay, startWith, Subject, switchMap } from 'rxjs';
 import { IRecord, IRecordDto, NEVER_ASK_DELETE_AGAIN_STORAGE_KEY, TCrud } from '../../models';
 import { mapDtoToRecord, mapRecordToDto } from '../../utils';
 import { TuiDialogService } from '@taiga-ui/core';
@@ -18,6 +18,7 @@ export class RecordService {
 
 	private readonly createOrUpdateRecordSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord | null }>();
 	private readonly readRecordsSubject = new Subject<void>();
+	private readonly createRecordsSubject = new Subject<IRecord[]>();
 	private readonly deleteRecordSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord }>();
 
 	private readonly createOrUpdateRecord$ = this.createOrUpdateRecordSubject.pipe(
@@ -31,6 +32,15 @@ export class RecordService {
 
 			return request$.pipe(map((dto) => ({ record: mapDtoToRecord(dto), isNew: !record.uuid })));
 		}),
+	);
+
+	private readonly createRecords$ = this.createRecordsSubject.pipe(
+		switchMap((records) => {
+			const requests$ = records.map((record) => this.http.post<IRecordDto>(`${environment.baseUrl}/record`, mapRecordToDto(record)));
+			return requests$.length ? forkJoin(requests$) : of([]);
+		}),
+		map((dtos) => dtos.map((dto) => mapDtoToRecord(dto))),
+		switchMap((records) => from(records)),
 	);
 
 	// TODO: Implement pagination
@@ -62,6 +72,7 @@ export class RecordService {
 				isNew ? ({ type: 'create', value: record } as TCrud<IRecord, 'create'>) : ({ type: 'update', value: record } as TCrud<IRecord, 'update'>),
 			),
 		),
+		this.createRecords$.pipe(map((value) => ({ type: 'create', value }) as TCrud<IRecord, 'create'>)),
 		this.readRecords$.pipe(map((value) => ({ type: 'read', value }) as TCrud<IRecord[], 'read'>)),
 		this.deleteRecord$.pipe(map((value) => ({ type: 'delete', value }) as TCrud<IRecord, 'delete'>)),
 	);
@@ -98,5 +109,9 @@ export class RecordService {
 	}
 	public deleteRecord(component: PolymorpheusComponent<unknown>, record: IRecord) {
 		this.deleteRecordSubject.next({ component, record });
+	}
+
+	public addRecords(records: IRecord[]) {
+		this.createRecordsSubject.next(records);
 	}
 }

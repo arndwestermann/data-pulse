@@ -15,6 +15,9 @@
 			size="s" />
 		<ng-template #dropdown>
 			<tui-data-list class="flex items-center" *transloco="let transloco; prefix: 'general'">
+				<button tuiOption routerLink="/profile">
+					<span class="w-full">{{ transloco('profile') }}</span>
+				</button>
 				<button tuiOption (click)="logout()">
 					<span class="w-full">{{ transloco('logout') }}</span>
 				</button>

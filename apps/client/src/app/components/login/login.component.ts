@@ -17,13 +17,13 @@ import { map, merge } from 'rxjs';
 					tuiTextfield
 					formControlName="username"
 					[invalid]="(credentials.controls.username.touched && this.credentials.controls.username.getError('required')) || wrongCredentials()"
-					[placeholder]="transloco('login.username')"
+					[placeholder]="transloco('profile.username')"
 					(keypress)="onKeyPress($event)" />
 			</tui-textfield>
 			<tui-error
 				[error]="
 					credentials.controls.username.touched && this.credentials.controls.username.getError('required')
-						? transloco('validation.required', { field: transloco('login.username') })
+						? transloco('validation.required', { field: transloco('profile.username') })
 						: null
 				" />
 			<tui-textfield class="w-1/3">
@@ -32,14 +32,14 @@ import { map, merge } from 'rxjs';
 					formControlName="password"
 					type="password"
 					[invalid]="(credentials.controls.password.touched && this.credentials.controls.password.getError('required')) || wrongCredentials()"
-					[placeholder]="transloco('login.password')"
+					[placeholder]="transloco('profile.password')"
 					(keypress)="onKeyPress($event)" />
 				<tui-icon tuiPassword />
 			</tui-textfield>
 			<tui-error
 				[error]="
 					credentials.controls.password.touched && this.credentials.controls.password.getError('required')
-						? transloco('validation.required', { field: transloco('login.password') })
+						? transloco('validation.required', { field: transloco('profile.password') })
 						: null
 				" />
 
@@ -48,7 +48,7 @@ import { map, merge } from 'rxjs';
 			<span>{{ credentials.getError('wrongCredentials') }}</span>
 
 			<button tuiButton type="button" (click)="login()">
-				{{ transloco('login.login') }}
+				{{ transloco('general.login') }}
 			</button>
 		</ng-container>
 	`,

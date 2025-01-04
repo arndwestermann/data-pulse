@@ -15,3 +15,5 @@ export interface Permissions {
 	role: string[];
 	user: string[];
 }
+
+export type UpdateUser = Partial<IUser> & { password?: string };

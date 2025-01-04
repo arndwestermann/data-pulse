@@ -3,6 +3,7 @@
 		"save": "Save",
 		"yes": "Yes",
 		"no": "No",
+		"profile": "Profile",
 		"logout": "Logout"
 	},
 	"routes": {
@@ -27,10 +28,13 @@
 		"admissions": "Ad",
 		"discharges": "Dis"
 	},
-	"login": {
+	"profile": {
 		"username": "Username",
+		"email": "Email",
 		"password": "Password",
-		"login": "Login",
+		"confirmPassword": "Confirm password"
+	},
+	"login": {
 		"wrongCredentials": "Username or password is incorrect"
 	},
 	"specialty": {
@@ -63,6 +67,9 @@
 		"caution": "Caution"
 	},
 	"validation": {
-		"required": "{{ field }} is required"
+		"required": "{{ field }} is required",
+		"minLength": "Password must be at least 8 characters",
+		"pattern": "Password must have at least 1 number and 1 special character",
+		"mustMatch": "Passwords must match"
 	}
 }

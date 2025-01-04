@@ -54,7 +54,15 @@ export class AuthenticationService {
 		share(),
 	);
 
-	private readonly loginSuccess$ = this.loginRequest$.pipe(
+	private readonly logoutRequest$ = this.logoutSubject.pipe(
+		switchMap(() => this.http.delete<unknown>(`${environment.baseUrl}/auth/logout`)),
+		map(() => null),
+		tap(() => this.router.navigate(['/login'])),
+	);
+
+	private readonly cachedTokens$ = this.cacheService.load<IToken>(AUTH_STORAGE_KEY);
+
+	public readonly loginSuccess$ = this.loginRequest$.pipe(
 		filter((res): res is ITokenResponse => 'accessToken' in res),
 		map(
 			(tokens) =>
@@ -72,15 +80,8 @@ export class AuthenticationService {
 			this.router.navigate([redirectUrl]);
 			return token;
 		}),
+		share(),
 	);
-
-	private readonly logoutRequest$ = this.logoutSubject.pipe(
-		switchMap(() => this.http.delete<unknown>(`${environment.baseUrl}/auth/logout`)),
-		map(() => null),
-		tap(() => this.router.navigate(['/login'])),
-	);
-
-	private readonly cachedTokens$ = this.cacheService.load<IToken>(AUTH_STORAGE_KEY);
 
 	public readonly tokens$ = merge(this.loginSuccess$, this.cachedTokens$, this.logoutRequest$).pipe(
 		switchMap((token) => {

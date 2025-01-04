@@ -63,7 +63,7 @@ export class NavigationComponent {
 	private readonly userService = inject(UserService);
 
 	public readonly isDrawerOpen = signal<boolean>(false);
-	public readonly routes = signal(this.router.config[0].children?.filter((route) => route.path !== ''));
+	public readonly routes = signal(this.router.config[0].children?.filter((route) => route.data?.['exclude'] === false) ?? []);
 	public readonly isProfileDropdownOpen = signal<boolean>(false);
 	public readonly username = toSignal(this.userService.user$.pipe(map((user) => user?.username ?? 'Unknown')), { initialValue: 'Unknown' });
 

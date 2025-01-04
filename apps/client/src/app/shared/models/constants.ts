@@ -6,3 +6,5 @@ export const CSV_LINE_SEPARATOR = '\r\n';
 export const CSV_DATA_SEPARATOR = ';';
 
 export const IS_PUBLIC_REQUEST = 'X-Is-Public';
+
+export const STRENGTH_REGEX = new RegExp('^(?=.*[0-9]){1,}(?=.*[!?={}\\[\\]\\/\\|@#$%^&*()--__+.]){1,}.{1,}$');

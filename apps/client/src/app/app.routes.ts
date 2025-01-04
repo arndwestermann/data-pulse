@@ -1,5 +1,5 @@
 import { Route } from '@angular/router';
-import { HeatMapComponent, NavigationComponent, RecordsComponent } from './components';
+import { NavigationComponent } from './components';
 import { isAuthenticatedGuard } from './shared/guards';
 
 export const appRoutes: Route[] = [
@@ -10,24 +10,36 @@ export const appRoutes: Route[] = [
 		children: [
 			{
 				path: 'records',
-				component: RecordsComponent,
+				loadComponent: () => import('./components/records/records.component').then((c) => c.RecordsComponent),
 				data: {
 					translationKey: 'records',
 					icon: 'table-list',
+					exclude: false,
 				},
 			},
 			{
 				path: 'heatmap',
-				component: HeatMapComponent,
+				loadComponent: () => import('./components/heat-map/heat-map.component').then((c) => c.HeatMapComponent),
 				data: {
 					translationKey: 'heatmap',
 					icon: 'fire',
+					exclude: false,
+				},
+			},
+			{
+				path: 'profile',
+				loadComponent: () => import('./components/profile/profile.component').then((c) => c.ProfileComponent),
+				data: {
+					exclude: true,
 				},
 			},
 			{
 				path: '',
 				redirectTo: 'records',
 				pathMatch: 'full',
+				data: {
+					exclude: true,
+				},
 			},
 		],
 	},

@@ -3,6 +3,7 @@
 		"save": "Speichern",
 		"yes": "Ja",
 		"no": "Nein",
+		"profile": "Profil",
 		"logout": "Abmelden"
 	},
 	"routes": {
@@ -27,10 +28,13 @@
 		"admissions": "Zu",
 		"discharges": "Ab"
 	},
-	"login": {
+	"profile": {
 		"username": "Benutzername",
+		"email": "E-Mail",
 		"password": "Passwort",
-		"login": "Anmelden",
+		"confirmPassword": "Passwort wiederholen"
+	},
+	"login": {
 		"wrongCredentials": "Falscher Benutzername oder Passwort"
 	},
 	"specialty": {
@@ -63,6 +67,9 @@
 		"caution": "Achtung"
 	},
 	"validation": {
-		"required": "{{ field }} ist erfolderlich"
+		"required": "{{ field }} ist erfolderlich",
+		"minLength": "Passwort muss mindestens 8 Zeichen haben",
+		"pattern": "Passwort muss mindestens 1 Zahl und 1 Sonderzeichen enthalten",
+		"mustMatch": "Passwörter müssen überein stimmen"
 	}
 }

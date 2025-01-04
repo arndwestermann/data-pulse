@@ -119,7 +119,7 @@ export class RecordFormComponent {
 	public readonly status = signal([null, ...STATUS]);
 
 	public readonly form = new FormGroup<IRecordForm>({
-		uuid: new FormControl<string | null>(this.context.data?.uuid),
+		uuid: new FormControl<string | null>(this.context.data?.uuid ?? null),
 		id: new FormControl<string>(this.context.data?.id ?? '', { nonNullable: true }),
 		arrival: new FormControl<Date>(this.context.data?.arrival ?? new Date(), { nonNullable: true }),
 		leaving: new FormControl<Date>(this.context.data?.leaving ?? new Date(), { nonNullable: true }),
@@ -145,7 +145,7 @@ export class RecordFormComponent {
 		const uuid = value.uuid;
 		const record: IRecord = {
 			...this.form.getRawValue(),
-			uuid: uuid ?? this.getId(),
+			uuid: uuid ?? undefined,
 			status: uuid ? value.status : status,
 		};
 		this.context.completeWith(record);
@@ -159,14 +159,4 @@ export class RecordFormComponent {
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate('specialty.' + item);
 	protected readonly stringifyStatus = (item: string | null): string => (item ? this.translocoService.translate('status.' + item) : '');
-
-	private getId(): string {
-		if ('randomUUID' in crypto) return crypto.randomUUID();
-
-		return this.uid();
-	}
-
-	private uid(): string {
-		return Date.now().toString(36) + Math.random().toString(36).slice(2);
-	}
 }

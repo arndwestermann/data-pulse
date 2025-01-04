@@ -6,3 +6,4 @@ export * from './uuid/uuid.util';
 export * from './get-status/get-status.util';
 export * from './miscellaneous.util';
 export * from './rxjs.util';
+export * from './map-record/map-record.util';

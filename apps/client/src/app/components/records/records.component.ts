@@ -1,25 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { TuiButton, TuiDialogService, TuiIcon } from '@taiga-ui/core';
+import { TuiButton, TuiIcon } from '@taiga-ui/core';
 import { TuiTable } from '@taiga-ui/addon-table';
 import { DatePipe, NgClass } from '@angular/common';
 
-import {
-	CSV_DATA_SEPARATOR,
-	CSV_LINE_SEPARATOR,
-	DATA_STORAGE_KEY,
-	IRecord,
-	NEVER_ASK_DELETE_AGAIN_STORAGE_KEY,
-	Specialty,
-} from '../../shared/models';
-import { fromCache, getStatus, parseCSV, uuid as getUUID } from '../../shared/utils';
+import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, Specialty } from '../../shared/models';
+import { getStatus, parseCSV, uuid as getUUID } from '../../shared/utils';
 
-import { map, tap } from 'rxjs';
+import { map } from 'rxjs';
 
 import { RecordFormComponent } from './components/record-form/record-form.component';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { RecordService } from '../../shared/services';
 
 const angularImports = [NgClass, DatePipe];
 const taigaUiImports = [TuiButton, TuiIcon, TuiTable];
@@ -78,7 +72,7 @@ const thirdPartyImports = [TranslocoDirective];
 										size="s"
 										tuiIconButton
 										type="button"
-										(click)="deleteRecord($event, item.uuid)"></button>
+										(click)="deleteRecord($event, item)"></button>
 								</div>
 							</td>
 						</tr>
@@ -134,10 +128,10 @@ const thirdPartyImports = [TranslocoDirective];
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecordsComponent {
-	private readonly dialogService = inject(TuiDialogService);
-
 	private readonly translocoService = inject(TranslocoService);
-	private readonly data = fromCache<IRecord[]>(DATA_STORAGE_KEY, []);
+	private readonly recordService = inject(RecordService);
+
+	private readonly data = toSignal(this.recordService.records$, { initialValue: [] });
 
 	public readonly locale = toSignal(
 		this.translocoService.langChanges$.pipe(
@@ -158,53 +152,18 @@ export class RecordsComponent {
 	);
 
 	public readonly sortedData = computed(() => this.data().sort((a, b) => a.arrival.getTime() - b.arrival.getTime()));
-	public readonly neverAskAgain = fromCache<boolean>(NEVER_ASK_DELETE_AGAIN_STORAGE_KEY, false);
 	public readonly columns = computed(() => ['id', 'arrival', 'leaving', 'from', 'to', 'specialty', 'actions']);
 
 	public openDialog(record?: IRecord): void {
-		this.dialogService
-			.open<IRecord | null>(new PolymorpheusComponent(RecordFormComponent), {
-				data: record ?? null,
-				dismissible: true,
-				size: 'm',
-			})
-			.pipe(
-				tap((value) => {
-					if (value)
-						this.data.update((records) => {
-							const existingRecord = records.find((record) => record.uuid === value.uuid);
-							if (existingRecord) {
-								const index = records.indexOf(existingRecord);
-								return [...records.slice(0, index), value, ...records.slice(index + 1)];
-							}
-
-							return [...records, value];
-						});
-				}),
-			)
-			.subscribe();
+		this.recordService.createOrUpdateRecord(new PolymorpheusComponent(RecordFormComponent), record ?? null);
 	}
 
-	public deleteRecord(event: Event, uuid: string): void {
+	public deleteRecord(event: Event, record: IRecord): void {
 		event.stopPropagation();
 
-		if (this.neverAskAgain()) {
-			this.removeRecord(uuid);
-			return;
-		}
+		if (!record.uuid) return;
 
-		this.dialogService
-			.open<{ delete: boolean; neverAskAgain: boolean }>(new PolymorpheusComponent(ConfirmDeleteComponent), {
-				dismissible: true,
-				size: 'm',
-			})
-			.pipe(
-				tap((value) => {
-					if (value.delete === true) this.removeRecord(uuid);
-					if (value.neverAskAgain === true) this.neverAskAgain.set(true);
-				}),
-			)
-			.subscribe();
+		this.recordService.deleteRecord(new PolymorpheusComponent(ConfirmDeleteComponent), record);
 	}
 
 	public importFile(event: Event) {
@@ -268,13 +227,9 @@ export class RecordsComponent {
 				});
 			}
 
-			this.data.update((value) => value.concat(records));
+			// this.data.update((value) => value.concat(records));
 		};
 
 		fileReader.readAsText(file);
-	}
-
-	private removeRecord(uuid: string): void {
-		this.data.update((records) => records.filter((record) => record.uuid !== uuid));
 	}
 }

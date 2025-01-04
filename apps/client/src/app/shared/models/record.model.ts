@@ -1,5 +1,15 @@
+export interface IRecordDto {
+	uuid?: string;
+	id: string;
+	arrival: string;
+	leaving: string;
+	from: string;
+	to: string;
+	specialty: Specialty;
+}
+
 export interface IRecord {
-	uuid: string;
+	uuid?: string;
 	id: string;
 	arrival: Date;
 	leaving: Date;

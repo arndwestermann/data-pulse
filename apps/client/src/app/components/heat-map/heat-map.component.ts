@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, isDevMode, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { DATA_STORAGE_KEY, IRecord, SPECIALTIES } from '../../shared/models';
-import { fromCache } from '../../shared/utils';
+import { SPECIALTIES } from '../../shared/models';
 import { startOfMonth, endOfMonth, isWithinInterval, isSameDay } from 'date-fns';
 import { TuiInputDateRangeModule } from '@taiga-ui/legacy';
 import { FormsModule } from '@angular/forms';
@@ -18,6 +17,7 @@ import { HeatmapDetailDialogComponent } from './components/heatmap-detail-dialog
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { IHeatmapDetailDialogContext } from './models/heatmap-detail-dialog.model';
 import { CustomHeatmapComponent } from './components/custom-heatmap/custom-heatmap.component';
+import { RecordService } from '../../shared/services';
 
 interface IHeatmapChartData<T> {
 	name: string;
@@ -98,7 +98,9 @@ interface IHeatmapSeries<T> {
 })
 export class HeatMapComponent {
 	private readonly dialogService = inject(TuiDialogService);
-	private readonly data = fromCache<IRecord[]>(DATA_STORAGE_KEY, []);
+	private readonly recordService = inject(RecordService);
+
+	private readonly data = toSignal(this.recordService.records$, { initialValue: [] });
 	private readonly hostElement = inject(ElementRef<HTMLElement>);
 	private readonly translocoService = inject(TranslocoService);
 

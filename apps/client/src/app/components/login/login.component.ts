@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { TuiButton, TuiError, TuiIcon, TuiTextfield } from '@taiga-ui/core';
-import { AuthenticationService } from '../../shared/services';
+import { AppService, AuthenticationService } from '../../shared/services';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslocoDirective } from '@jsverse/transloco';
-import { TuiPassword } from '@taiga-ui/kit';
+import { TuiButtonLoading, TuiPassword } from '@taiga-ui/kit';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map, merge } from 'rxjs';
 
 @Component({
 	selector: 'dp-login',
-	imports: [ReactiveFormsModule, TuiTextfield, TuiButton, TuiIcon, TuiPassword, TuiError, TranslocoDirective],
+	imports: [ReactiveFormsModule, TuiTextfield, TuiButton, TuiButtonLoading, TuiIcon, TuiPassword, TuiError, TranslocoDirective],
 	template: `
 		<ng-container *transloco="let transloco" [formGroup]="credentials">
 			<tui-textfield class="w-1/3">
@@ -47,7 +47,7 @@ import { map, merge } from 'rxjs';
 
 			<span>{{ credentials.getError('wrongCredentials') }}</span>
 
-			<button tuiButton type="button" (click)="login()">
+			<button tuiButton type="button" (click)="login()" [loading]="isLoading()">
 				{{ transloco('general.login') }}
 			</button>
 		</ng-container>
@@ -60,7 +60,10 @@ import { map, merge } from 'rxjs';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
+	private readonly appService = inject(AppService);
 	private readonly authService = inject(AuthenticationService);
+
+	public readonly isLoading = toSignal(this.appService.isLoading$, { initialValue: false });
 
 	public readonly credentials = new FormGroup({
 		username: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),

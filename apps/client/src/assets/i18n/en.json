@@ -4,6 +4,7 @@
 		"yes": "Yes",
 		"no": "No",
 		"profile": "Profile",
+		"login": "Login",
 		"logout": "Logout"
 	},
 	"routes": {

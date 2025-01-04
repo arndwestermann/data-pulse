@@ -13,7 +13,7 @@ import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RecordService } from '../../shared/services';
+import { AppService, RecordService } from '../../shared/services';
 
 const angularImports = [NgClass, DatePipe];
 const taigaUiImports = [TuiButton, TuiIcon, TuiTable];
@@ -128,10 +128,13 @@ const thirdPartyImports = [TranslocoDirective];
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecordsComponent {
+	private readonly appService = inject(AppService);
 	private readonly translocoService = inject(TranslocoService);
 	private readonly recordService = inject(RecordService);
 
 	private readonly data = toSignal(this.recordService.records$, { initialValue: [] });
+
+	public readonly isLoading = toSignal(this.appService.isLoading$, { initialValue: false });
 
 	public readonly locale = toSignal(
 		this.translocoService.langChanges$.pipe(

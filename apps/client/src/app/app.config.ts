@@ -10,7 +10,7 @@ import { registerLocaleData } from '@angular/common';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 import { TranslocoHttpLoader } from './transloco-loader';
 import { provideTransloco, TranslocoService } from '@jsverse/transloco';
 import { NG_EVENT_PLUGINS } from '@taiga-ui/event-plugins';
@@ -20,7 +20,7 @@ import { TUI_LANGUAGE, TUI_GERMAN_LANGUAGE, TUI_ENGLISH_LANGUAGE } from '@taiga-
 import localeEnGB from '@angular/common/locales/en-GB';
 import localeDeDE from '@angular/common/locales/de';
 import { STORAGE_TOKEN } from './shared/services';
-import { accessTokenInterceptor } from './shared/interceptors';
+import { accessTokenInterceptor, LOADING_INTERCEPTOR_PROVIDER } from './shared/interceptors';
 import { distinctUntilChanged, map } from 'rxjs';
 
 registerLocaleData(localeEnGB, 'en-GB');
@@ -35,7 +35,7 @@ export const appConfig: ApplicationConfig = {
 		provideAnimations(),
 		provideExperimentalZonelessChangeDetection(),
 		provideRouter(appRoutes),
-		provideHttpClient(withInterceptors([accessTokenInterceptor])),
+		provideHttpClient(withInterceptorsFromDi(), withInterceptors([accessTokenInterceptor])),
 		provideTransloco({
 			config: {
 				availableLangs: ['en', 'de'],
@@ -68,5 +68,6 @@ export const appConfig: ApplicationConfig = {
 				),
 			deps: [TranslocoService],
 		},
+		LOADING_INTERCEPTOR_PROVIDER,
 	],
 };

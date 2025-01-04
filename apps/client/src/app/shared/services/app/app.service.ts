@@ -7,7 +7,7 @@ import { debounceTime, distinctUntilChanged, shareReplay, startWith, Subject } f
 export class AppService {
 	private readonly isLoadingSubject = new Subject<boolean>();
 
-	public readonly isLoading$ = this.isLoadingSubject.pipe(startWith(false), debounceTime(500), distinctUntilChanged(), shareReplay(1));
+	public readonly isLoading$ = this.isLoadingSubject.pipe(startWith(false), debounceTime(250), distinctUntilChanged(), shareReplay(1));
 
 	public setLoading(loading: boolean): void {
 		this.isLoadingSubject.next(loading);

@@ -47,7 +47,7 @@ services:
       api:
         condition: service_started
     ports:
-      - 80:80
+      - 81:80
     networks:
       - data-pulse
 networks:

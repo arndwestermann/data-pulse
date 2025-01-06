@@ -16,7 +16,9 @@ WORKDIR /api/current
 RUN npm ci
 RUN rsync -av --exclude='package*' ../data-pulse/dist/apps/api/ ../current/
 RUN addgroup api && adduser -S -G api api
+RUN chmod +x startup.sh
+RUN chown api:api startup.sh
 USER api
 
 EXPOSE 3000
-CMD [ "node", "./main.js" ]
+ENTRYPOINT [ "./startup.sh" ]

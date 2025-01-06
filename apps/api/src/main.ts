@@ -1,14 +1,23 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
-
-import { Logger } from '@nestjs/common';
+import { Logger, NestApplicationOptions } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import { readFileSync } from 'fs';
 
 async function bootstrap() {
-	const app = await NestFactory.create(AppModule);
+	const certPath = process.env.SSL_CERTIFICATE_PATH;
+	const keyPath = process.env.SSL_KEY_PATH;
+
+	let serverOptions: NestApplicationOptions | undefined = undefined;
+	if (certPath && keyPath) {
+		const httpsOptions = {
+			key: readFileSync(keyPath),
+			cert: readFileSync(certPath),
+		};
+
+		serverOptions = { httpsOptions };
+	}
+
+	const app = await NestFactory.create(AppModule, serverOptions);
 	const globalPrefix = 'api';
 	app.setGlobalPrefix(globalPrefix);
 	app.enableCors({

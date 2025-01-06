@@ -3,6 +3,7 @@
 		"save": "Save",
 		"yes": "Yes",
 		"no": "No",
+		"deleteSelected": "Delete selected",
 		"profile": "Profile",
 		"login": "Login",
 		"logout": "Logout"

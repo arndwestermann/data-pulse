@@ -19,6 +19,7 @@ export class RecordService {
 	private readonly createOrUpdateRecordSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord | null }>();
 	private readonly readRecordsSubject = new Subject<void>();
 	private readonly createRecordsSubject = new Subject<IRecord[]>();
+	private readonly deleteSelectedRecordsSubject = new Subject<IRecord[]>();
 	private readonly deleteRecordSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord }>();
 
 	private readonly createOrUpdateRecord$ = this.createOrUpdateRecordSubject.pipe(
@@ -66,6 +67,15 @@ export class RecordService {
 		switchMap((record) => this.http.delete(`${environment.baseUrl}/record/${record.uuid}`).pipe(map(() => record))),
 	);
 
+	private readonly deleteSelectedRecords$ = this.deleteSelectedRecordsSubject.pipe(
+		switchMap((records) => {
+			const requests$ = records.map((record) => this.http.delete(`${environment.baseUrl}/record/${record.uuid}`));
+			return requests$.length ? forkJoin(requests$).pipe(map(() => records)) : of([]);
+		}),
+		filter((records) => records.length > 0),
+		switchMap((records) => from(records)),
+	);
+
 	private readonly recordsEvent$ = merge(
 		this.createOrUpdateRecord$.pipe(
 			map(({ record, isNew }) =>
@@ -75,6 +85,7 @@ export class RecordService {
 		this.createRecords$.pipe(map((value) => ({ type: 'create', value }) as TCrud<IRecord, 'create'>)),
 		this.readRecords$.pipe(map((value) => ({ type: 'read', value }) as TCrud<IRecord[], 'read'>)),
 		this.deleteRecord$.pipe(map((value) => ({ type: 'delete', value }) as TCrud<IRecord, 'delete'>)),
+		this.deleteSelectedRecords$.pipe(map((value) => ({ type: 'delete', value }) as TCrud<IRecord, 'delete'>)),
 	);
 
 	public readonly records$ = this.recordsEvent$.pipe(
@@ -113,5 +124,9 @@ export class RecordService {
 
 	public addRecords(records: IRecord[]) {
 		this.createRecordsSubject.next(records);
+	}
+
+	public deleteSelectedRecords(records: IRecord[]) {
+		this.deleteSelectedRecordsSubject.next(records);
 	}
 }

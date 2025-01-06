@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { TuiButton, TuiIcon } from '@taiga-ui/core';
+import { TuiButton, TuiHint, TuiIcon } from '@taiga-ui/core';
 import { TuiTable } from '@taiga-ui/addon-table';
 import { DatePipe, NgClass } from '@angular/common';
+import { SelectionModel } from '@angular/cdk/collections';
 
 import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, Specialty } from '../../shared/models';
 import { getStatus, parseCSV, uuid as getUUID } from '../../shared/utils';
@@ -14,37 +15,65 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AppService, RecordService } from '../../shared/services';
+import { FormsModule } from '@angular/forms';
+import { TuiCheckbox } from '@taiga-ui/kit';
 
-const angularImports = [NgClass, DatePipe];
-const taigaUiImports = [TuiButton, TuiIcon, TuiTable];
+const angularImports = [NgClass, FormsModule, DatePipe];
+const taigaUiImports = [TuiButton, TuiIcon, TuiTable, TuiHint, TuiCheckbox];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
 	selector: 'dp-records',
 	imports: [...angularImports, ...taigaUiImports, ...thirdPartyImports],
 	template: `
-		<div class="flex flex-shrink-0 space-x-2">
-			<button type="button" tuiButton appearance="primary" size="s" (click)="openDialog()">
+		<div class="flex flex-shrink-0 space-x-2" *transloco="let transloco; prefix: 'general'">
+			<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
 				<tui-icon icon="@tui.fa.solid.plus" />
 			</button>
 			<button type="button" tuiButton appearance="primary" size="s" (click)="fileInput.click()">
 				<tui-icon icon="@tui.fa.solid.upload" />
 			</button>
 			<input #fileInput class="hidden" type="file" accept=".csv" [multiple]="false" (change)="importFile($event)" />
+			<button
+				type="button"
+				tuiButton
+				appearance="primary-destructive"
+				size="s"
+				(click)="deleteSelectedRecords(selections.selected)"
+				[tuiHint]="transloco('deleteSelected')">
+				<tui-icon icon="@tui.fa.solid.trash" />
+				@if (selections.selected.length > 0) {
+					<span>({{ selections.selected.length }})</span>
+				}
+			</button>
 		</div>
 		<div class="grow overflow-y-auto">
 			<table tuiTable class="w-full" [columns]="columns()">
 				<thead *transloco="let transloco; prefix: 'records'">
 					<tr tuiThGroup>
 						@for (column of columns(); track column) {
-							<th *tuiHead="column" tuiTh [sorter]="null" [sticky]="true">
-								{{ transloco(column) }}
-							</th>
+							@if (column === 'select') {
+								<th *tuiHead="'select'" tuiTh [sorter]="null" [sticky]="true">
+									<div class="flex justify-center">
+										<input
+											tuiCheckbox
+											type="checkbox"
+											id="header"
+											[ngModel]="sortedData().length > 0 && selections.selected.length === sortedData().length"
+											[indeterminate]="selections.selected.length > 0 && selections.selected.length < sortedData().length"
+											(ngModelChange)="selectAll($event)" />
+									</div>
+								</th>
+							} @else {
+								<th *tuiHead="column" tuiTh [sorter]="null" [sticky]="true">
+									{{ transloco(column) }}
+								</th>
+							}
 						}
 					</tr>
 				</thead>
 				<tbody tuiTbody [data]="sortedData()" class="group" *transloco="let transloco; prefix: 'specialty'">
 					@for (item of sortedData(); track $index) {
-						<tr tuiTr (click)="openDialog(item)" [ngClass]="item.status">
+						<tr tuiTr (pointerdown)="onPointerEvent($event, item)" [ngClass]="item.status">
 							<td *tuiCell="'id'" tuiTd>
 								{{ item.id }}
 							</td>
@@ -72,7 +101,12 @@ const thirdPartyImports = [TranslocoDirective];
 										size="s"
 										tuiIconButton
 										type="button"
-										(click)="deleteRecord($event, item)"></button>
+										(pointerdown)="deleteRecord($event, item)"></button>
+								</div>
+							</td>
+							<td *tuiCell="'select'" tuiTd>
+								<div class="flex justify-center">
+									<input tuiCheckbox type="checkbox" [ngModel]="selections.isSelected(item)" (ngModelChange)="selections.toggle(item)" />
 								</div>
 							</td>
 						</tr>
@@ -134,6 +168,8 @@ export class RecordsComponent {
 
 	private readonly data = toSignal(this.recordService.records$, { initialValue: [] });
 
+	public readonly selections = new SelectionModel<IRecord>(true, [], true, (left, right) => left.uuid === right.uuid);
+
 	public readonly isLoading = toSignal(this.appService.isLoading$, { initialValue: false });
 
 	public readonly locale = toSignal(
@@ -155,9 +191,11 @@ export class RecordsComponent {
 	);
 
 	public readonly sortedData = computed(() => this.data().sort((a, b) => a.arrival.getTime() - b.arrival.getTime()));
-	public readonly columns = computed(() => ['id', 'arrival', 'leaving', 'from', 'to', 'specialty', 'actions']);
+	public readonly columns = computed(() => ['id', 'arrival', 'leaving', 'from', 'to', 'specialty', 'actions', 'select']);
 
-	public openDialog(record?: IRecord): void {
+	public onPointerEvent(event: PointerEvent, record?: IRecord): void {
+		if (event.target instanceof HTMLInputElement) return;
+
 		this.recordService.createOrUpdateRecord(new PolymorpheusComponent(RecordFormComponent), record ?? null);
 	}
 
@@ -234,5 +272,18 @@ export class RecordsComponent {
 		};
 
 		fileReader.readAsText(file);
+	}
+
+	public deleteSelectedRecords(records: IRecord[]): void {
+		if (records.length <= 0) return;
+
+		this.recordService.deleteSelectedRecords(records);
+
+		this.selections.clear();
+	}
+
+	public selectAll(selectAll: boolean): void {
+		if (selectAll) this.selections.select(...this.sortedData());
+		else this.selections.clear();
 	}
 }

@@ -21,7 +21,7 @@ async function bootstrap() {
 	const globalPrefix = 'api';
 	app.setGlobalPrefix(globalPrefix);
 	app.enableCors({
-		origin: ['http://localhost:4200', 'https://localhost:4200', 'http://localhost', 'http://plesk.mike-westermann.de:32770'],
+		origin: ['http://localhost:4200', 'https://localhost:4200', 'http://localhost', 'http://plesk.mike-westermann.de:81'],
 	});
 
 	const port = process.env.PORT || 3000;

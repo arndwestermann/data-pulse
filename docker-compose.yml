@@ -48,6 +48,7 @@ services:
         condition: service_started
     ports:
       - 81:80
+      - 444:443
     networks:
       - data-pulse
 networks:

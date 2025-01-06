@@ -8,4 +8,5 @@ RUN npx nx run client:build
 
 FROM nginx
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY /etc/letsencrypt/live/plesk.mike-westermann.de/* /etc/nginx/ssl/
 COPY --from=build /app/dist/apps/client/browser /usr/share/nginx/html

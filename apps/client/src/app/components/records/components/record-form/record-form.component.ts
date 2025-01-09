@@ -125,7 +125,7 @@ export class RecordFormComponent {
 		leaving: new FormControl<Date>(this.context.data?.leaving ?? new Date(), { nonNullable: true }),
 		from: new FormControl<string>(this.context.data?.from ?? '', { nonNullable: true }),
 		to: new FormControl<string>(this.context.data?.to ?? '', { nonNullable: true }),
-		specialty: new FormControl<Specialty>('internal', { nonNullable: true }),
+		specialty: new FormControl<Specialty>(this.context.data?.specialty ?? 'internal', { nonNullable: true }),
 		status: new FormControl<Status | null>(this.context.data?.status ?? null),
 	});
 

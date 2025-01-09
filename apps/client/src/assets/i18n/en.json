@@ -57,6 +57,7 @@
 		"internalZVK": "Interal/ZVK",
 		"internalEPU": "Interal/EPU",
 		"internalPFO": "Interal/PFO",
+		"internalLAA": "Interal/LAA",
 		"suNotcoro": "SU/Notcoro"
 	},
 	"dialogs": {

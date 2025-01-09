@@ -37,6 +37,7 @@ export const SPECIALTIES = [
 	'internalZVK',
 	'internalEPU',
 	'internalPFO',
+	'internalLLA',
 	'suNotcoro',
 ] as const;
 

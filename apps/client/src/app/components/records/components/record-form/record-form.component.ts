@@ -78,7 +78,9 @@ const taigaUiImports = [
 								[tuiAutoFocus]="autoFocus ?? false"
 								[formControlName]="formControlName"
 								[min]="formControlName === 'arrival' ? null : minDate()"
-								[tuiTextfieldLabelOutside]="true" />
+								[tuiTextfieldLabelOutside]="true">
+								<input tuiTextfieldLegacy (focus)="onFocused($event)" />
+							</tui-input-date-time>
 						}
 						@default {
 							<tui-textfield>
@@ -162,6 +164,10 @@ export class RecordFormComponent {
 		if (event.key === 'Enter') {
 			this.save();
 		}
+	}
+
+	public onFocused(event: FocusEvent): void {
+		(event.target as HTMLInputElement).setSelectionRange(0, 0);
 	}
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate('specialty.' + item);

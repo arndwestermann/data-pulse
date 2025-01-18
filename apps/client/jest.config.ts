@@ -1,6 +1,7 @@
 export default {
 	displayName: 'client',
 	preset: '../../jest.preset.js',
+	testEnvironment: '../../3rd-party-lib-patches/patch-jsodm-environment.ts', // TODO: Remove once fixed
 	setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
 	coverageDirectory: '../../coverage/apps/client',
 	transform: {

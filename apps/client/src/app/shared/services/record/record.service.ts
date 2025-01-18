@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../../environments/environment';
-import { filter, forkJoin, from, map, merge, of, scan, shareReplay, startWith, Subject, switchMap } from 'rxjs';
+import { expand, filter, forkJoin, from, map, merge, of, scan, shareReplay, startWith, Subject, switchMap } from 'rxjs';
 import { IRecord, IRecordDto, NEVER_ASK_DELETE_AGAIN_STORAGE_KEY, TCrud } from '../../models';
 import { mapDtoToRecord, mapRecordToDto } from '../../utils';
 import { TuiDialogService } from '@taiga-ui/core';
@@ -24,8 +24,11 @@ export class RecordService {
 
 	private readonly createOrUpdateRecord$ = this.createOrUpdateRecordSubject.pipe(
 		switchMap(({ component, record }) =>
-			this.dialogService.open<IRecord>(component, { data: record, dismissible: true, size: 'm' }).pipe(map((record) => mapRecordToDto(record))),
+			this.dialogService
+				.open<IRecord>(component, { data: record, dismissible: true, size: 'm' })
+				.pipe(expand(() => this.dialogService.open<IRecord>(component, { data: record, dismissible: true, size: 'm' }))),
 		),
+		map((record) => mapRecordToDto(record)),
 		switchMap((record) => {
 			const request$ = record.uuid
 				? this.http.patch<IRecordDto>(`${environment.baseUrl}/record/${record.uuid}`, record)

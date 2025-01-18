@@ -7,7 +7,7 @@ import { TuiSelectModule, TuiTextfieldControllerModule, TuiInputDateTimeModule, 
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
-import { TuiDay, TuiTime } from '@taiga-ui/cdk';
+import { TuiAutoFocus, TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { TuiDataListWrapper, TuiFilterByInputPipe, TuiStringifyContentPipe } from '@taiga-ui/kit';
 import { IRecordForm } from '../../models/record-form.model';
 import { NativeDatetimeTransformerDirective } from '../../../../shared/directives';
@@ -28,6 +28,7 @@ const taigaUiImports = [
 	TuiFilterByInputPipe,
 	TuiStringifyContentPipe,
 	TuiComboBoxModule,
+	TuiAutoFocus,
 ];
 
 @Component({
@@ -36,7 +37,7 @@ const taigaUiImports = [
 	template: `
 		<form class="flex flex-col space-y-2" [formGroup]="form" *transloco="let transloco">
 			<div class="w-full">
-				<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'id', type: 'text' }" />
+				<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'id', type: 'text', autoFocus: true }" />
 			</div>
 			<div class="flex space-x-2">
 				<div class="w-1/2">
@@ -67,20 +68,26 @@ const taigaUiImports = [
 				<span class="mr-2 font-normal">{{ transloco('general.save') }}</span>
 			</button>
 
-			<ng-template let-formControlName="formControlName" let-type="type" let-array="array" #inputTemplate>
+			<ng-template let-formControlName="formControlName" let-type="type" let-array="array" let-autoFocus="autoFocus" #inputTemplate>
 				<label>
 					{{ transloco('records.' + formControlName) }}
 					@switch (type) {
 						@case ('datetime') {
 							<tui-input-date-time
 								toNativeDatetime
+								[tuiAutoFocus]="autoFocus ?? false"
 								[formControlName]="formControlName"
 								[min]="formControlName === 'arrival' ? null : minDate()"
 								[tuiTextfieldLabelOutside]="true" />
 						}
 						@default {
 							<tui-textfield>
-								<input tuiTextfield [formControlName]="formControlName" type="text" (keypress)="keyPress($event)" />
+								<input
+									tuiTextfield
+									[tuiAutoFocus]="autoFocus ?? false"
+									[formControlName]="formControlName"
+									type="text"
+									(keypress)="keyPress($event)" />
 							</tui-textfield>
 						}
 					}

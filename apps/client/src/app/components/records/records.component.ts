@@ -1,13 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { TuiButton, TuiHint, TuiIcon } from '@taiga-ui/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { TuiButton, TuiHint, TuiIcon, TuiTextfield } from '@taiga-ui/core';
 import { TuiTable } from '@taiga-ui/addon-table';
 import { DatePipe, NgClass } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 
-import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, Specialty } from '../../shared/models';
+import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, SPECIALTIES, Specialty } from '../../shared/models';
 import { getStatus, parseCSV, uuid as getUUID } from '../../shared/utils';
 
-import { map } from 'rxjs';
+import { combineLatest, map, of, switchMap } from 'rxjs';
 
 import { RecordFormComponent } from './components/record-form/record-form.component';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -15,15 +15,31 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AppService, RecordService } from '../../shared/services';
-import { FormsModule } from '@angular/forms';
-import { TuiCheckbox } from '@taiga-ui/kit';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { TuiCheckbox, TuiDataListWrapper } from '@taiga-ui/kit';
+import { TuiInputDateTimeModule, TuiInputTagModule, tuiInputTagOptionsProvider, TuiTextfieldControllerModule } from '@taiga-ui/legacy';
+import { TuiDay, TuiTime } from '@taiga-ui/cdk';
+import { isEqual, isSameDay } from 'date-fns';
+import { FilterSpecialtiesPipe } from './pipes';
 
-const angularImports = [NgClass, FormsModule, DatePipe];
-const taigaUiImports = [TuiButton, TuiIcon, TuiTable, TuiHint, TuiCheckbox];
+const angularImports = [NgClass, FormsModule, ReactiveFormsModule, DatePipe];
+const firstPartyImports = [FilterSpecialtiesPipe];
+const taigaUiImports = [
+	TuiButton,
+	TuiIcon,
+	TuiTable,
+	TuiHint,
+	TuiCheckbox,
+	TuiTextfield,
+	TuiInputDateTimeModule,
+	TuiTextfieldControllerModule,
+	TuiInputTagModule,
+	TuiDataListWrapper,
+];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
 	selector: 'dp-records',
-	imports: [...angularImports, ...taigaUiImports, ...thirdPartyImports],
+	imports: [...angularImports, ...taigaUiImports, ...firstPartyImports, ...thirdPartyImports],
 	template: `
 		<div class="flex flex-shrink-0 space-x-2" *transloco="let transloco; prefix: 'general'">
 			<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
@@ -66,6 +82,36 @@ const thirdPartyImports = [TranslocoDirective];
 							} @else {
 								<th *tuiHead="column" tuiTh [sorter]="null" [sticky]="true">
 									{{ transloco(column) }}
+								</th>
+							}
+						}
+					</tr>
+					<tr tuiThGroup [formGroup]="filterForm">
+						@for (column of columns(); track column) {
+							@if (column === 'actions' || column === 'select') {
+								<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true"></th>
+							} @else {
+								<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true">
+									@if (column === 'arrival' || column === 'leaving') {
+										<tui-input-date-time [formControlName]="column" [tuiTextfieldLabelOutside]="true" [tuiTextfieldCleaner]="true">
+											<input tuiTextfieldLegacy placeholder="04.09.1971" />
+										</tui-input-date-time>
+									} @else if (column === 'specialty') {
+										<tui-input-tag
+											name="specialty"
+											[formControlName]="column"
+											tuiTextfieldSize="m"
+											[rows]="1"
+											(searchChange)="onInputTagSearchChanged($event)"
+											[tuiTextfieldLabelOutside]="filterForm.controls.specialty.value.length > 0">
+											{{ transloco(column) }}
+											<tui-data-list-wrapper *tuiDataList [items]="mappedSpecialties() | filterSpecialties: filterForm.controls.specialty.value" />
+										</tui-input-tag>
+									} @else {
+										<tui-textfield tuiTextfieldAppearance="search">
+											<input tuiTextfield type="text" [formControlName]="column" [placeholder]="transloco(column)" />
+										</tui-textfield>
+									}
 								</th>
 							}
 						}
@@ -158,15 +204,111 @@ const thirdPartyImports = [TranslocoDirective];
 			flex-direction: row;
 			gap: 0.375rem;
 		}
+
+		[tuiAppearance][data-appearance='search'] {
+			@apply focus:outline-none;
+		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	providers: [
+		tuiInputTagOptionsProvider({
+			tagStatus: 'primary',
+		}),
+	],
 })
 export class RecordsComponent {
 	private readonly appService = inject(AppService);
 	private readonly translocoService = inject(TranslocoService);
 	private readonly recordService = inject(RecordService);
 
-	private readonly data = toSignal(this.recordService.records$, { initialValue: [] });
+	private readonly records = toSignal(this.recordService.records$, { initialValue: [] });
+
+	private readonly specialtyFilter = signal<string>('');
+
+	private readonly specialtyTranslations$ = of(SPECIALTIES.map((specialty) => specialty as string)).pipe(
+		switchMap((specialties) => {
+			const translations$ = specialties.map((specialty) =>
+				this.translocoService.selectTranslate<string>(`specialty.${specialty}`).pipe(map((translation) => ({ key: specialty, value: translation }))),
+			);
+
+			return combineLatest(translations$);
+		}),
+	);
+
+	private readonly specialties = toSignal(this.specialtyTranslations$, { initialValue: [] });
+
+	private readonly filteredSpecialties = computed(() => {
+		const filter = this.specialtyFilter();
+		if (!filter) return this.specialties();
+
+		return this.specialties().filter((specialty) => specialty.value.toLowerCase().includes(filter.toLowerCase()));
+	});
+
+	public readonly mappedSpecialties = computed(() => this.filteredSpecialties().map((specialty) => specialty.value));
+
+	public readonly filterForm = new FormGroup({
+		id: new FormControl<string | null>(null),
+		arrival: new FormControl<[TuiDay, TuiTime | null] | null>(null),
+		leaving: new FormControl<[TuiDay, TuiTime | null] | null>(null),
+		from: new FormControl<string | null>(null),
+		to: new FormControl<string | null>(null),
+		specialty: new FormControl<string[]>([], { nonNullable: true }),
+	});
+
+	public readonly filterFormChanged = toSignal(this.filterForm.valueChanges, { initialValue: this.filterForm.value });
+
+	public readonly filteredData = computed(() => {
+		const filter = this.filterFormChanged();
+		const specialties = this.specialties();
+		let records = this.records();
+
+		if (filter.id) {
+			const id = filter.id;
+			records = records.filter((record) => record.id.includes(id));
+		}
+		if (filter.arrival && filter.arrival[0]) {
+			const arrivalArray = filter.arrival;
+			const arrival = new Date(
+				arrivalArray[0].year,
+				arrivalArray[0].month,
+				arrivalArray[0].day,
+				arrivalArray[1]?.hours ?? 0,
+				arrivalArray[1]?.minutes ?? 0,
+				arrivalArray[1]?.seconds ?? 0,
+			);
+
+			records = records.filter((record) => (arrivalArray[1] ? isEqual(record.arrival, arrival) : isSameDay(record.arrival, arrival)));
+		}
+		if (filter.leaving && filter.leaving[0]) {
+			const arrivalArray = filter.leaving;
+			const leaving = new Date(
+				arrivalArray[0].year,
+				arrivalArray[0].month,
+				arrivalArray[0].day,
+				arrivalArray[1]?.hours ?? 0,
+				arrivalArray[1]?.minutes ?? 0,
+				arrivalArray[1]?.seconds ?? 0,
+			);
+
+			records = records.filter((record) => (arrivalArray[1] ? isEqual(record.leaving, leaving) : isSameDay(record.leaving, leaving)));
+		}
+		if (filter.from) {
+			const from = filter.from;
+			records = records.filter((record) => record.from.includes(from));
+		}
+		if (filter.to) {
+			const to = filter.to;
+			records = records.filter((record) => record.to.includes(to));
+		}
+		if (filter.specialty && filter.specialty.length > 0) {
+			const specialty = filter.specialty
+				.map((specialty) => specialties.find((s) => s.value === specialty)?.key)
+				.filter((specialty) => specialty !== undefined);
+			records = records.filter((record) => specialty.includes(record.specialty));
+		}
+
+		return records;
+	});
 
 	public readonly selections = new SelectionModel<IRecord>(true, [], true, (left, right) => left.uuid === right.uuid);
 
@@ -190,8 +332,10 @@ export class RecordsComponent {
 		{ initialValue: this.translocoService.getActiveLang() },
 	);
 
-	public readonly sortedData = computed(() => this.data().sort((a, b) => a.arrival.getTime() - b.arrival.getTime()));
+	public readonly sortedData = computed(() => this.filteredData().sort((a, b) => a.arrival.getTime() - b.arrival.getTime()));
 	public readonly columns = computed(() => ['id', 'arrival', 'leaving', 'from', 'to', 'specialty', 'actions', 'select']);
+
+	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate(`specialty.${item}`);
 
 	public onPointerEvent(event: PointerEvent, record?: IRecord): void {
 		if (event.target instanceof HTMLInputElement) return;
@@ -285,5 +429,9 @@ export class RecordsComponent {
 	public selectAll(selectAll: boolean): void {
 		if (selectAll) this.selections.select(...this.sortedData());
 		else this.selections.clear();
+	}
+
+	public onInputTagSearchChanged(search: string): void {
+		this.specialtyFilter.update(() => search);
 	}
 }

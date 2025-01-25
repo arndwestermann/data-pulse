@@ -8,7 +8,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* You can add global styles to this file, and also import other style files */
+.bg-debug-screen-size {
+	@apply bg-red-500 md:bg-green-500 lg:bg-blue-500 2xl:bg-yellow-500 FHD:bg-purple-500 QHD:bg-black 4k:bg-white;
+}
 
 :root [tuiTheme='light'] {
 	color-scheme: light;

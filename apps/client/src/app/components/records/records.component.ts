@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { TuiButton, TuiHint, TuiIcon, TuiTextfield } from '@taiga-ui/core';
+import { TuiButton, TuiHint, TuiIcon, TuiScrollable, TuiScrollbar, TuiTextfield } from '@taiga-ui/core';
 import { TuiTable } from '@taiga-ui/addon-table';
 import { DatePipe, NgClass } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
+import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
 import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, SPECIALTIES, Specialty } from '../../shared/models';
 import { getStatus, parseCSV, uuid as getUUID } from '../../shared/utils';
@@ -22,7 +23,7 @@ import { TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { isEqual, isSameDay } from 'date-fns';
 import { FilterSpecialtiesPipe } from './pipes';
 
-const angularImports = [NgClass, FormsModule, ReactiveFormsModule, DatePipe];
+const angularImports = [NgClass, FormsModule, ReactiveFormsModule, DatePipe, CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport];
 const firstPartyImports = [FilterSpecialtiesPipe];
 const taigaUiImports = [
 	TuiButton,
@@ -35,6 +36,8 @@ const taigaUiImports = [
 	TuiTextfieldControllerModule,
 	TuiInputTagModule,
 	TuiDataListWrapper,
+	TuiScrollable,
+	TuiScrollbar,
 ];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
@@ -62,64 +65,71 @@ const thirdPartyImports = [TranslocoDirective];
 				}
 			</button>
 		</div>
-		<div class="grow overflow-y-auto">
-			<table tuiTable class="w-full" [columns]="columns()">
-				<thead *transloco="let transloco; prefix: 'records'">
-					<tr tuiThGroup>
-						@for (column of columns(); track column) {
-							@if (column === 'select') {
-								<th *tuiHead="'select'" tuiTh [sorter]="null" [sticky]="true">
-									<div class="flex justify-center">
-										<input
-											tuiCheckbox
-											type="checkbox"
-											id="header"
-											[ngModel]="sortedData().length > 0 && selections.selected.length === sortedData().length"
-											[indeterminate]="selections.selected.length > 0 && selections.selected.length < sortedData().length"
-											(ngModelChange)="selectAll($event)" />
-									</div>
-								</th>
-							} @else {
-								<th *tuiHead="column" tuiTh [sorter]="null" [sticky]="true">
-									{{ transloco(column) }}
-								</th>
+		<tui-scrollbar class="grow" [hidden]="true">
+			<cdk-virtual-scroll-viewport
+				#viewport
+				tuiScrollable
+				appendOnly
+				class="[block-size:80rem]"
+				[itemSize]="57"
+				[maxBufferPx]="500"
+				[minBufferPx]="400">
+				<table tuiTable class="w-full" [columns]="columns()">
+					<thead *transloco="let transloco; prefix: 'records'">
+						<tr tuiThGroup>
+							@for (column of columns(); track column) {
+								@if (column === 'select') {
+									<th *tuiHead="'select'" tuiTh [sorter]="null" [sticky]="true" [style.top.px]="-(viewport.getOffsetToRenderedContentStart() || 0)">
+										<div class="flex justify-center">
+											<input
+												tuiCheckbox
+												type="checkbox"
+												id="header"
+												[ngModel]="sortedData().length > 0 && selections.selected.length === sortedData().length"
+												[indeterminate]="selections.selected.length > 0 && selections.selected.length < sortedData().length"
+												(ngModelChange)="selectAll($event)" />
+										</div>
+									</th>
+								} @else {
+									<th *tuiHead="column" tuiTh [sorter]="null" [sticky]="true" [style.top.px]="-(viewport.getOffsetToRenderedContentStart() || 0)">
+										{{ transloco(column) }}
+									</th>
+								}
 							}
-						}
-					</tr>
-					<tr tuiThGroup [formGroup]="filterForm">
-						@for (column of columns(); track column) {
-							@if (column === 'actions' || column === 'select') {
-								<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true"></th>
-							} @else {
-								<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true">
-									@if (column === 'arrival' || column === 'leaving') {
-										<tui-input-date-time [formControlName]="column" [tuiTextfieldLabelOutside]="true" [tuiTextfieldCleaner]="true">
-											<input tuiTextfieldLegacy placeholder="04.09.1971" />
-										</tui-input-date-time>
-									} @else if (column === 'specialty') {
-										<tui-input-tag
-											name="specialty"
-											[formControlName]="column"
-											tuiTextfieldSize="m"
-											[rows]="1"
-											(searchChange)="onInputTagSearchChanged($event)"
-											[tuiTextfieldLabelOutside]="filterForm.controls.specialty.value.length > 0">
-											{{ transloco(column) }}
-											<tui-data-list-wrapper *tuiDataList [items]="mappedSpecialties() | filterSpecialties: filterForm.controls.specialty.value" />
-										</tui-input-tag>
-									} @else {
-										<tui-textfield tuiTextfieldAppearance="search">
-											<input tuiTextfield type="text" [formControlName]="column" [placeholder]="transloco(column)" />
-										</tui-textfield>
-									}
-								</th>
+						</tr>
+						<tr tuiThGroup [formGroup]="filterForm">
+							@for (column of columns(); track column) {
+								@if (column === 'actions' || column === 'select') {
+									<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true"></th>
+								} @else {
+									<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true">
+										@if (column === 'arrival' || column === 'leaving') {
+											<tui-input-date-time [formControlName]="column" [tuiTextfieldLabelOutside]="true" [tuiTextfieldCleaner]="true">
+												<input tuiTextfieldLegacy placeholder="04.09.1971" />
+											</tui-input-date-time>
+										} @else if (column === 'specialty') {
+											<tui-input-tag
+												name="specialty"
+												[formControlName]="column"
+												tuiTextfieldSize="m"
+												[rows]="1"
+												(searchChange)="onInputTagSearchChanged($event)"
+												[tuiTextfieldLabelOutside]="filterForm.controls.specialty.value.length > 0">
+												{{ transloco(column) }}
+												<tui-data-list-wrapper *tuiDataList [items]="mappedSpecialties() | filterSpecialties: filterForm.controls.specialty.value" />
+											</tui-input-tag>
+										} @else {
+											<tui-textfield tuiTextfieldAppearance="search">
+												<input tuiTextfield type="text" [formControlName]="column" [placeholder]="transloco(column)" />
+											</tui-textfield>
+										}
+									</th>
+								}
 							}
-						}
-					</tr>
-				</thead>
-				<tbody tuiTbody [data]="sortedData()" class="group" *transloco="let transloco; prefix: 'specialty'">
-					@for (item of sortedData(); track $index) {
-						<tr tuiTr (pointerdown)="onPointerEvent($event, item)" [ngClass]="item.status">
+						</tr>
+					</thead>
+					<tbody tuiTbody [data]="sortedData()" class="group" *transloco="let transloco; prefix: 'specialty'">
+						<tr tuiTr (pointerdown)="onPointerEvent($event, item)" [ngClass]="item.status" *cdkVirtualFor="let item of sortedData()">
 							<td *tuiCell="'id'" tuiTd>
 								{{ item.id }}
 							</td>
@@ -156,10 +166,10 @@ const thirdPartyImports = [TranslocoDirective];
 								</div>
 							</td>
 						</tr>
-					}
-				</tbody>
-			</table>
-		</div>
+					</tbody>
+				</table>
+			</cdk-virtual-scroll-viewport>
+		</tui-scrollbar>
 	`,
 	styles: `
 		:host {

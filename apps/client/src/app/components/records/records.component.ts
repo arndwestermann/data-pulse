@@ -1,6 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+	AfterViewInit,
+	ChangeDetectionStrategy,
+	Component,
+	computed,
+	DestroyRef,
+	ElementRef,
+	inject,
+	signal,
+	viewChild,
+	viewChildren,
+} from '@angular/core';
 import { TuiButton, TuiHint, TuiIcon, TuiScrollable, TuiScrollbar, TuiTextfield } from '@taiga-ui/core';
-import { TuiTable } from '@taiga-ui/addon-table';
+import { TuiTable, TuiTableTr } from '@taiga-ui/addon-table';
 import { DatePipe, NgClass } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
@@ -8,13 +19,13 @@ import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } 
 import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, SPECIALTIES, Specialty } from '../../shared/models';
 import { getStatus, parseCSV, uuid as getUUID } from '../../shared/utils';
 
-import { combineLatest, map, of, switchMap } from 'rxjs';
+import { combineLatest, debounceTime, filter, map, of, Subject, switchMap, take, tap } from 'rxjs';
 
 import { RecordFormComponent } from './components/record-form/record-form.component';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AppService, RecordService } from '../../shared/services';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TuiCheckbox, TuiDataListWrapper } from '@taiga-ui/kit';
@@ -65,16 +76,29 @@ const thirdPartyImports = [TranslocoDirective];
 				}
 			</button>
 		</div>
-		<tui-scrollbar class="grow" [hidden]="true">
+		<tui-scrollbar class="grow relative" [hidden]="true">
+			<div class="absolute bottom-0 right-0 z-10 flex flex-col gap-2">
+				@if (!scrollPosition() || scrollPosition() === 'bottom') {
+					<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('top')">
+						<tui-icon icon="@tui.fa.solid.arrow-up" />
+					</button>
+				}
+
+				@if (!scrollPosition() || scrollPosition() === 'top') {
+					<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('bottom')">
+						<tui-icon icon="@tui.fa.solid.arrow-down" />
+					</button>
+				}
+			</div>
 			<cdk-virtual-scroll-viewport
 				#viewport
 				tuiScrollable
 				appendOnly
-				class="[block-size:80rem]"
+				class="[block-size:76rem]"
 				[itemSize]="57"
 				[maxBufferPx]="500"
 				[minBufferPx]="400">
-				<table tuiTable class="w-full" [columns]="columns()">
+				<table tuiTable class="w-full h-full" [columns]="columns()">
 					<thead *transloco="let transloco; prefix: 'records'">
 						<tr tuiThGroup>
 							@for (column of columns(); track column) {
@@ -129,7 +153,7 @@ const thirdPartyImports = [TranslocoDirective];
 						</tr>
 					</thead>
 					<tbody tuiTbody [data]="sortedData()" class="group" *transloco="let transloco; prefix: 'specialty'">
-						<tr tuiTr (pointerdown)="onPointerEvent($event, item)" [ngClass]="item.status" *cdkVirtualFor="let item of sortedData()">
+						<tr #row tuiTr (pointerdown)="onPointerEvent($event, item)" [ngClass]="item.status" *cdkVirtualFor="let item of sortedData()">
 							<td *tuiCell="'id'" tuiTd>
 								{{ item.id }}
 							</td>
@@ -226,10 +250,23 @@ const thirdPartyImports = [TranslocoDirective];
 		}),
 	],
 })
-export class RecordsComponent {
+export class RecordsComponent implements AfterViewInit {
 	private readonly appService = inject(AppService);
 	private readonly translocoService = inject(TranslocoService);
 	private readonly recordService = inject(RecordService);
+	private readonly destroyRef = inject(DestroyRef);
+
+	private readonly scrollEventSubject = new Subject<HTMLElement>();
+
+	private readonly scrollPosition$ = this.scrollEventSubject.pipe(
+		map((container) => {
+			if (container.scrollTop < 100) return 'top';
+
+			const isBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 1;
+
+			return isBottom ? 'bottom' : null;
+		}),
+	);
 
 	private readonly records = toSignal(this.recordService.records$, { initialValue: [] });
 
@@ -253,6 +290,11 @@ export class RecordsComponent {
 
 		return this.specialties().filter((specialty) => specialty.value.toLowerCase().includes(filter.toLowerCase()));
 	});
+
+	private readonly scrollContainer = viewChild.required<CdkVirtualScrollViewport>('viewport');
+	private readonly rows = viewChildren<TuiTableTr<IRecord>, ElementRef>('row', { read: ElementRef });
+
+	public readonly scrollPosition = toSignal(this.scrollPosition$, { initialValue: 'top' });
 
 	public readonly mappedSpecialties = computed(() => this.filteredSpecialties().map((specialty) => specialty.value));
 
@@ -346,6 +388,16 @@ export class RecordsComponent {
 	public readonly columns = computed(() => ['id', 'arrival', 'leaving', 'from', 'to', 'specialty', 'actions', 'select']);
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate(`specialty.${item}`);
+
+	public ngAfterViewInit(): void {
+		this.scrollContainer()
+			.elementScrolled()
+			.pipe(
+				tap((value) => this.scrollEventSubject.next(value.target as HTMLElement)),
+				takeUntilDestroyed(this.destroyRef),
+			)
+			.subscribe();
+	}
 
 	public onPointerEvent(event: PointerEvent, record?: IRecord): void {
 		if (event.target instanceof HTMLInputElement) return;
@@ -443,5 +495,22 @@ export class RecordsComponent {
 
 	public onInputTagSearchChanged(search: string): void {
 		this.specialtyFilter.update(() => search);
+	}
+
+	public scrollTo(direction: 'top' | 'bottom'): void {
+		const index = direction === 'top' ? 0 : this.sortedData().length - 1;
+		this.scrollContainer().scrollToIndex(index, 'smooth');
+
+		if (direction === 'top') return;
+
+		this.scrollContainer()
+			.elementScrolled()
+			.pipe(
+				debounceTime(200),
+				filter(() => this.rows().length === this.sortedData().length),
+				tap(() => this.rows()[index].nativeElement.scrollIntoView({ behavior: 'smooth' })),
+				take(1),
+			)
+			.subscribe();
 	}
 }

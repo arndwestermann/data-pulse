@@ -1,0 +1,45 @@
+# the events block is required
+events{}
+
+http {
+    # include the default mime.types to map file extensions to MIME types
+    include /etc/nginx/mime.types; 
+
+    server {        
+        listen 443 ssl default_server; 
+        listen [::]:443 ssl;
+
+        # set the root directory for the server (we need to copy our 
+        # application files here)
+        root /usr/share/nginx/html;
+
+        # set the default index file for the server (Angular generates the 
+        # index.html file for us and it will be in the above directory)
+        index index.html;
+
+        server_name YOUR_SERVER_NAME_HERE;
+
+        ssl_certificate YOUR_CERT_PATH_HERE;
+        ssl_certificate_key YOUR_KEY_PATH_HERE;
+
+        # specify the configuration for the '/' location
+        location / {
+            # try to serve the requested URI. if that fails then try to 
+            # serve the URI with a trailing slash. if that fails, then 
+            # serve the index.html file; this is needed in order to serve 
+            # Angular routes--e.g.,'localhost:8080/customer' will serve 
+            # the index.html file
+            try_files $uri $uri/ /index.html;
+        }
+    }
+
+    server {
+
+        listen 80 default_server;
+
+        server_name YOUR_SERVER_NAME_HERE;
+
+        return 301 YOUR_REDIRECT_ADDRESS_HERE$request_uri;
+
+    }
+}

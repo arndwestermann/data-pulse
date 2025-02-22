@@ -44,3 +44,5 @@ Thumbs.db
 .angular
 migrations.json
 .env
+/ssl
+nginx.conf

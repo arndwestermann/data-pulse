@@ -6,6 +6,8 @@ import { readFileSync } from 'fs';
 async function bootstrap() {
 	const certPath = process.env.SSL_CERTIFICATE_PATH;
 	const keyPath = process.env.SSL_KEY_PATH;
+	const allowedOrigins =
+		process.env.ALLOWED_ORIGINS !== undefined && process.env.ALLOWED_ORIGINS !== '' ? process.env.ALLOWED_ORIGINS?.split(';') : [];
 
 	let serverOptions: NestApplicationOptions | undefined = undefined;
 	if (certPath && keyPath) {
@@ -21,13 +23,7 @@ async function bootstrap() {
 	const globalPrefix = 'api';
 	app.setGlobalPrefix(globalPrefix);
 	app.enableCors({
-		origin: [
-			'http://localhost:4200',
-			'https://localhost:4200',
-			'http://localhost',
-			'http://plesk.mike-westermann.de:81',
-			'https://plesk.mike-westermann.de:444',
-		],
+		origin: allowedOrigins,
 	});
 
 	const port = process.env.PORT || 3000;

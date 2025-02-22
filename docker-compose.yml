@@ -40,6 +40,9 @@ services:
     build:
       context: .
       dockerfile: client.Dockerfile
+      args:
+        - ENVIRONMENT=${ENVIRONMENT}
+        - NGINX_CONFIG=${NGINX_CONFIG}
     container_name: client
     depends_on:
       db:

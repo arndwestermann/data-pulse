@@ -6,9 +6,6 @@ http {
     include /etc/nginx/mime.types; 
 
     server {        
-        listen 443 ssl default_server; 
-        listen [::]:443 ssl;
-
         # set the root directory for the server (we need to copy our 
         # application files here)
         root /usr/share/nginx/html;
@@ -16,11 +13,6 @@ http {
         # set the default index file for the server (Angular generates the 
         # index.html file for us and it will be in the above directory)
         index index.html;
-
-        server_name plesk.mike-westermann.de;
-
-        ssl_certificate /etc/nginx/ssl/certificate.pem;
-        ssl_certificate_key /etc/nginx/ssl/key.pem;
 
         # specify the configuration for the '/' location
         location / {
@@ -31,15 +23,5 @@ http {
             # the index.html file
             try_files $uri $uri/ /index.html;
         }
-    }
-
-    server {
-
-        listen 80 default_server;
-
-        server_name plesk.mike-westermann.de;
-
-        return 301 https://plesk.mike-westermann.de:444$request_uri;
-
     }
 }

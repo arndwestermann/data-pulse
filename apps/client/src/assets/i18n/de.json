@@ -6,7 +6,12 @@
 		"deleteSelected": "Ausgewählte löschen",
 		"profile": "Profil",
 		"login": "Anmelden",
-		"logout": "Abmelden"
+		"logout": "Abmelden",
+		"delete": "Löschen",
+		"markAsCorrect": "Als richtig markieren",
+		"markAsIncorrect": "Als nicht richtig markieren",
+		"select": "Auswählen",
+		"unselect": "Abwählen"
 	},
 	"routes": {
 		"records": "Archiv",

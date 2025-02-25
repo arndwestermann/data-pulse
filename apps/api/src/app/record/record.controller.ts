@@ -36,9 +36,18 @@ export class RecordController {
 	}
 
 	@Permission({ ressource: 'record', actions: ['read'] })
-	@Get(':uuid')
-	findOne(@Param('uuid') uuid: string, @User() user: TokenPayload) {
-		return this.recordService.findOne(uuid, user.sub);
+	@Get(':id')
+	findOne(@Res() res: Response<IRecordResponse>, @Param('id') id: string, @User() user: TokenPayload) {
+		const isUuid = id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i) !== null;
+
+		const request$ = isUuid ? this.recordService.findOne(id, user.sub) : this.recordService.findeOneByRecordId(id, user.sub);
+		return request$.pipe(
+			map((value) => {
+				if (!value) return res.status(HttpStatus.NOT_FOUND).send();
+
+				return res.status(HttpStatus.OK).send(mapRecordToResponse(value));
+			}),
+		);
 	}
 
 	@Permission({ ressource: 'record', actions: ['update'] })

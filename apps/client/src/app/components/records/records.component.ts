@@ -10,14 +10,24 @@ import {
 	viewChild,
 	viewChildren,
 } from '@angular/core';
-import { TuiButton, TuiHint, TuiIcon, TuiScrollable, TuiScrollbar, TuiTextfield } from '@taiga-ui/core';
+import {
+	TuiButton,
+	TuiDataList,
+	TuiDropdown,
+	TuiDropdownDirective,
+	TuiHint,
+	TuiIcon,
+	TuiScrollable,
+	TuiScrollbar,
+	TuiTextfield,
+} from '@taiga-ui/core';
 import { TuiTable, TuiTableTr } from '@taiga-ui/addon-table';
-import { DatePipe, NgClass } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
-import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, SPECIALTIES, Specialty } from '../../shared/models';
-import { getStatus, parseCSV, uuid as getUUID } from '../../shared/utils';
+import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, SPECIALTIES, Specialty, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY } from '../../shared/models';
+import { fromCache, parseCSV, uuid as getUUID } from '../../shared/utils';
 
 import { combineLatest, debounceTime, filter, map, of, Subject, switchMap, take, tap } from 'rxjs';
 
@@ -28,14 +38,14 @@ import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-dele
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AppService, RecordService } from '../../shared/services';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TuiCheckbox, TuiDataListWrapper } from '@taiga-ui/kit';
+import { TuiCheckbox, TuiDataListDropdownManager, TuiDataListWrapper } from '@taiga-ui/kit';
 import { TuiInputDateTimeModule, TuiInputTagModule, tuiInputTagOptionsProvider, TuiTextfieldControllerModule } from '@taiga-ui/legacy';
 import { TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { isEqual, isSameDay } from 'date-fns';
-import { FilterSpecialtiesPipe } from './pipes';
+import { FilterSpecialtiesPipe, GetStatusPipe, MarkedAsCorrectPipe } from './pipes';
 
-const angularImports = [NgClass, FormsModule, ReactiveFormsModule, DatePipe, CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport];
-const firstPartyImports = [FilterSpecialtiesPipe];
+const angularImports = [FormsModule, ReactiveFormsModule, DatePipe, CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport];
+const firstPartyImports = [FilterSpecialtiesPipe, GetStatusPipe, MarkedAsCorrectPipe];
 const taigaUiImports = [
 	TuiButton,
 	TuiIcon,
@@ -49,6 +59,9 @@ const taigaUiImports = [
 	TuiDataListWrapper,
 	TuiScrollable,
 	TuiScrollbar,
+	TuiDropdown,
+	TuiDataList,
+	TuiDataListDropdownManager,
 ];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
@@ -153,43 +166,82 @@ const thirdPartyImports = [TranslocoDirective];
 						</tr>
 					</thead>
 					<tbody tuiTbody [data]="sortedData()" class="group" *transloco="let transloco; prefix: 'specialty'">
-						<tr #row tuiTr (pointerdown)="onPointerEvent($event, item)" [ngClass]="item.status" *cdkVirtualFor="let item of sortedData()">
-							<td *tuiCell="'id'" tuiTd>
-								{{ item.id }}
-							</td>
-							<td *tuiCell="'arrival'" tuiTd>
-								{{ item.arrival | date: 'short' : undefined : locale() }}
-							</td>
-							<td *tuiCell="'leaving'" tuiTd>
-								{{ item.leaving | date: 'short' : undefined : locale() }}
-							</td>
-							<td *tuiCell="'from'" tuiTd>
-								{{ item.from }}
-							</td>
-							<td *tuiCell="'to'" tuiTd>
-								{{ item.to }}
-							</td>
-							<td *tuiCell="'specialty'" tuiTd>
-								{{ transloco(item.specialty) }}
-							</td>
+						<ng-container *cdkVirtualFor="let item of sortedData()">
+							@let isMarkedAsCorrect = item | markedAsCorrect: recordsMarkedAsCorrect();
+							@let status = item | getStatus;
 
-							<td *tuiCell="'actions'" tuiTd>
-								<div class="w-full h-full flex justify-center">
-									<button
-										appearance="flat-destructive"
-										iconStart="@tui.fa.solid.trash"
-										size="s"
-										tuiIconButton
-										type="button"
-										(pointerdown)="deleteRecord($event, item)"></button>
-								</div>
-							</td>
-							<td *tuiCell="'select'" tuiTd>
-								<div class="flex justify-center">
-									<input tuiCheckbox type="checkbox" [ngModel]="selections.isSelected(item)" (ngModelChange)="selections.toggle(item)" />
-								</div>
-							</td>
-						</tr>
+							<tr
+								#row
+								tuiTr
+								(pointerdown)="onPointerEvent($event, item)"
+								[class]="isMarkedAsCorrect ? null : status"
+								#dropdown="tuiDropdown"
+								tuiDropdownContext
+								[tuiDropdown]="contextMenu">
+								<td *tuiCell="'id'" tuiTd>
+									{{ item.id }}
+								</td>
+								<td *tuiCell="'arrival'" tuiTd>
+									{{ item.arrival | date: 'short' : undefined : locale() }}
+								</td>
+								<td *tuiCell="'leaving'" tuiTd>
+									{{ item.leaving | date: 'short' : undefined : locale() }}
+								</td>
+								<td *tuiCell="'from'" tuiTd>
+									{{ item.from }}
+								</td>
+								<td *tuiCell="'to'" tuiTd>
+									{{ item.to }}
+								</td>
+								<td *tuiCell="'specialty'" tuiTd>
+									{{ transloco(item.specialty) }}
+								</td>
+
+								<td *tuiCell="'actions'" tuiTd>
+									<div class="w-full h-full flex justify-center">
+										<button
+											appearance="flat-destructive"
+											iconStart="@tui.fa.solid.trash"
+											size="s"
+											tuiIconButton
+											type="button"
+											(pointerdown.stop)="deleteRecord(item)"></button>
+									</div>
+								</td>
+								<td *tuiCell="'select'" tuiTd>
+									<div class="flex justify-center">
+										<input tuiCheckbox type="checkbox" [ngModel]="selections.isSelected(item)" (ngModelChange)="selections.toggle(item)" />
+									</div>
+								</td>
+
+								<ng-template #contextMenu>
+									<tui-data-list role="menu" tuiDataListDropdownManager *transloco="let transloco; prefix: 'general'">
+										@if (status !== null) {
+											@if (isMarkedAsCorrect) {
+												<button tuiOption type="button" (click)="onConetextButtonClick(dropdown, 'markAsIncorrect', item)">
+													{{ transloco('markAsIncorrect') }} <tui-icon icon="@tui.fa.solid.xmark" class="ml-2 w-4 text-red-500" />
+												</button>
+											} @else {
+												<button tuiOption type="button" (click)="onConetextButtonClick(dropdown, 'markAsCorrect', item)">
+													{{ transloco('markAsCorrect') }} <tui-icon icon="@tui.fa.solid.check" class="ml-2 w-4 text-green-500" />
+												</button>
+											}
+										}
+
+										@let isSelected = selections.isSelected(item);
+										@let icon = '@tui.fa.' + (isSelected ? 'regular' : 'solid') + '.square-check';
+
+										<button tuiOption type="button" (pointerdown)="onConetextButtonClick(dropdown, 'select', item)">
+											{{ transloco(isSelected ? 'unselect' : 'select') }} <tui-icon [icon]="icon" class="ml-2 w-4 text-blue-500" />
+										</button>
+
+										<button tuiOption type="button" (pointerdown)="onConetextButtonClick(dropdown, 'delete', item)">
+											{{ transloco('delete') }} <tui-icon icon="@tui.fa.solid.trash" class="ml-2 w-4 text-red-500" />
+										</button>
+									</tui-data-list>
+								</ng-template>
+							</tr>
+						</ng-container>
 					</tbody>
 				</table>
 			</cdk-virtual-scroll-viewport>
@@ -293,6 +345,8 @@ export class RecordsComponent implements AfterViewInit {
 
 	private readonly scrollContainer = viewChild.required<CdkVirtualScrollViewport>('viewport');
 	private readonly rows = viewChildren<TuiTableTr<IRecord>, ElementRef>('row', { read: ElementRef });
+
+	public readonly recordsMarkedAsCorrect = fromCache<string[]>(RECORDS_MARKED_AS_CORRECT_STORAGE_KEY, []);
 
 	public readonly scrollPosition = toSignal(this.scrollPosition$, { initialValue: 'top' });
 
@@ -400,14 +454,12 @@ export class RecordsComponent implements AfterViewInit {
 	}
 
 	public onPointerEvent(event: PointerEvent, record?: IRecord): void {
-		if (event.target instanceof HTMLInputElement) return;
+		if (event.target instanceof HTMLInputElement || event.button === 2) return;
 
 		this.recordService.createOrUpdateRecord(new PolymorpheusComponent(RecordFormComponent), record ?? null);
 	}
 
-	public deleteRecord(event: Event, record: IRecord): void {
-		event.stopPropagation();
-
+	public deleteRecord(record: IRecord): void {
 		if (!record.uuid) return;
 
 		this.recordService.deleteRecord(new PolymorpheusComponent(ConfirmDeleteComponent), record);
@@ -460,8 +512,6 @@ export class RecordsComponent implements AfterViewInit {
 				const arrival = new Date(yearArrival, monthArrival - 1, dayArrival, hourArrival, minuteArrival, secondArrival);
 				const leaving = new Date(yearLeaving, monthLeaving - 1, dayLeaving, hourLeaving, minuteLeaving, secondLeaving);
 
-				const status = getStatus(leaving, arrival);
-
 				records.push({
 					uuid: uuid,
 					id: element.id,
@@ -470,7 +520,6 @@ export class RecordsComponent implements AfterViewInit {
 					from: element.from,
 					to: element.to,
 					specialty: element.specialty as Specialty,
-					status,
 				});
 			}
 
@@ -512,5 +561,33 @@ export class RecordsComponent implements AfterViewInit {
 				take(1),
 			)
 			.subscribe();
+	}
+
+	public onConetextButtonClick(dropdown: TuiDropdownDirective, event: 'markAsCorrect' | 'markAsIncorrect' | 'select' | 'delete', record: IRecord) {
+		const uuid = record.uuid;
+		if (!uuid) return;
+
+		switch (event) {
+			case 'markAsCorrect':
+				this.recordsMarkedAsCorrect.update((value) => {
+					const existing = value.find((item) => item === uuid);
+					if (existing) return value;
+
+					return [...value, uuid];
+				});
+				break;
+			case 'markAsIncorrect':
+				this.recordsMarkedAsCorrect.update((value) => value.filter((item) => item !== uuid));
+				break;
+			case 'select':
+				this.selections.toggle(record);
+				break;
+			case 'delete':
+				this.deleteRecord(record);
+				break;
+			default:
+				break;
+		}
+		dropdown.toggle(false);
 	}
 }

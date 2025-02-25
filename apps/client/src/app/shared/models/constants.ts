@@ -8,3 +8,4 @@ export const CSV_DATA_SEPARATOR = ';';
 export const IS_PUBLIC_REQUEST = 'X-Is-Public';
 
 export const STRENGTH_REGEX = new RegExp('^(?=.*[0-9]){1,}(?=.*[!?={}\\[\\]\\/\\|@#$%^&*()--__+.]){1,}.{1,}$');
+export const RECORDS_MARKED_AS_CORRECT_STORAGE_KEY = 'markedAsCorrect';

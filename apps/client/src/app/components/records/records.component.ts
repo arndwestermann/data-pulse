@@ -523,7 +523,9 @@ export class RecordsComponent implements AfterViewInit {
 				});
 			}
 
-			this.recordService.addRecords(records);
+			console.log(records);
+
+			// this.recordService.addRecords(records);
 		};
 
 		fileReader.readAsText(file);

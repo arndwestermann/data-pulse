@@ -59,6 +59,19 @@ export class RecordService {
 		);
 	}
 
+	public findeOneByRecordId(id: string, user: string): Observable<Record | null> {
+		return from(
+			this.recordRepository.findOne({
+				where: {
+					id,
+					user: {
+						uuid: user,
+					},
+				},
+			}),
+		);
+	}
+
 	public update(uuid: string, updateRecordDto: UpdateRecordDto, user: string): Observable<Record | null> {
 		return this.userService.findOneById(user).pipe(
 			switchMap((user) => (user ? this.findOne(uuid, user.uuid) : of(null))),

@@ -1,5 +1,5 @@
 import { FormControl } from '@angular/forms';
-import { Specialty, Status } from '../../../shared/models';
+import { Specialty } from '../../../shared/models';
 
 export interface IRecordForm {
 	uuid: FormControl<string | null>;
@@ -9,5 +9,4 @@ export interface IRecordForm {
 	from: FormControl<string>;
 	to: FormControl<string>;
 	specialty: FormControl<Specialty>;
-	status: FormControl<Status | null>;
 }

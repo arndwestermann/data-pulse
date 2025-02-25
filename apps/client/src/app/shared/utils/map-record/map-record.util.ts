@@ -1,6 +1,5 @@
 import { parseJSON } from 'date-fns';
 import { IRecord, IRecordDto } from '../../models';
-import { getStatus } from '../get-status/get-status.util';
 
 export function mapDtoToRecord(dto: IRecordDto): IRecord {
 	const arrival = parseJSON(dto.arrival);
@@ -13,7 +12,6 @@ export function mapDtoToRecord(dto: IRecordDto): IRecord {
 		arrival,
 		leaving,
 		specialty: dto.specialty,
-		status: getStatus(leaving, arrival),
 	};
 }
 

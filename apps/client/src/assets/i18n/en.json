@@ -6,7 +6,12 @@
 		"deleteSelected": "Delete selected",
 		"profile": "Profile",
 		"login": "Login",
-		"logout": "Logout"
+		"logout": "Logout",
+		"delete": "Delete",
+		"markAsCorrect": "Mark as correct",
+		"markAsIncorrect": "Mark as incorrect",
+		"select": "Select",
+		"unselect": "Unselect"
 	},
 	"routes": {
 		"records": "Records",

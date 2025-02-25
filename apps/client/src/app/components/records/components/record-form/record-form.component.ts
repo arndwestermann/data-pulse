@@ -12,8 +12,7 @@ import { TuiDataListWrapper, TuiFilterByInputPipe, TuiStringifyContentPipe } fro
 import { IRecordForm } from '../../models/record-form.model';
 import { NativeDatetimeTransformerDirective } from '../../../../shared/directives';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { getStatus } from '../../../../shared/utils';
-import { IRecord, SPECIALTIES, STATUS, Specialty, Status } from '../../../../shared/models';
+import { IRecord, SPECIALTIES, Specialty } from '../../../../shared/models';
 
 const angularImports = [ReactiveFormsModule, NgTemplateOutlet];
 const firstPartyImports = [NativeDatetimeTransformerDirective];
@@ -56,14 +55,8 @@ const taigaUiImports = [
 				</div>
 			</div>
 
-			<div class="flex space-x-2">
-				<div class="w-1/2">
-					<ng-container *ngTemplateOutlet="dropdownTemplate; context: { formControlName: 'specialty', array: specialties() }" />
-				</div>
-				<div class="w-1/2">
-					<ng-container *ngTemplateOutlet="dropdownTemplate; context: { formControlName: 'status', array: status() }" />
-				</div>
-			</div>
+			<ng-container *ngTemplateOutlet="dropdownTemplate; context: { formControlName: 'specialty', array: specialties() }" />
+
 			<button tuiButton class="w-full" type="button" size="m" (click)="save()">
 				<span class="mr-2 font-normal">{{ transloco('general.save') }}</span>
 			</button>
@@ -99,15 +92,9 @@ const taigaUiImports = [
 			<ng-template let-formControlName="formControlName" let-array="array" #dropdownTemplate>
 				<label>
 					{{ transloco('records.' + formControlName) }}
-					<tui-combo-box
-						[formControlName]="formControlName"
-						[stringify]="formControlName === 'status' ? stringifyStatus : stringifySpecialty"
-						[tuiTextfieldLabelOutside]="true">
+					<tui-combo-box [formControlName]="formControlName" [stringify]="stringifySpecialty" [tuiTextfieldLabelOutside]="true">
 						<input tuiTextfieldLegacy (keypress)="keyPress($event)" />
-						<tui-data-list-wrapper
-							*tuiDataList
-							[items]="array | tuiFilterByInput"
-							[itemContent]="(formControlName === 'status' ? stringifyStatus : stringifySpecialty) | tuiStringifyContent" />
+						<tui-data-list-wrapper *tuiDataList [items]="array | tuiFilterByInput" [itemContent]="stringifySpecialty | tuiStringifyContent" />
 					</tui-combo-box>
 				</label>
 			</ng-template>
@@ -125,7 +112,6 @@ export class RecordFormComponent {
 
 	public readonly context = inject<TuiDialogContext<IRecord, IRecord | null>>(POLYMORPHEUS_CONTEXT);
 	public readonly specialties = signal(SPECIALTIES);
-	public readonly status = signal([null, ...STATUS]);
 
 	public readonly form = new FormGroup<IRecordForm>({
 		uuid: new FormControl<string | null>(this.context.data?.uuid ?? null),
@@ -135,7 +121,6 @@ export class RecordFormComponent {
 		from: new FormControl<string>(this.context.data?.from ?? '', { nonNullable: true }),
 		to: new FormControl<string>(this.context.data?.to ?? '', { nonNullable: true }),
 		specialty: new FormControl<Specialty>(this.context.data?.specialty ?? 'internal', { nonNullable: true }),
-		status: new FormControl<Status | null>(this.context.data?.status ?? null),
 	});
 
 	public readonly arrivalChange = toSignal(this.form.controls.arrival.valueChanges, { initialValue: this.form.controls.arrival.value });
@@ -150,12 +135,10 @@ export class RecordFormComponent {
 
 	public save(): void {
 		const value = this.form.getRawValue();
-		const status = getStatus(value.leaving, value.arrival);
 		const uuid = value.uuid;
 		const record: IRecord = {
 			...this.form.getRawValue(),
 			uuid: uuid ?? undefined,
-			status: uuid ? value.status : status,
 		};
 		this.context.completeWith(record);
 	}
@@ -171,5 +154,4 @@ export class RecordFormComponent {
 	}
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate('specialty.' + item);
-	protected readonly stringifyStatus = (item: string | null): string => (item ? this.translocoService.translate('status.' + item) : '');
 }

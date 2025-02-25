@@ -16,7 +16,6 @@ export interface IRecord {
 	from: string;
 	to: string;
 	specialty: Specialty;
-	status: Status | null;
 }
 
 export const SPECIALTIES = [

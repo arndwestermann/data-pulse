@@ -375,30 +375,16 @@ export class RecordsComponent implements AfterViewInit {
 			records = records.filter((record) => record.id.includes(id));
 		}
 		if (filter.arrival && filter.arrival[0]) {
-			const arrivalArray = filter.arrival;
-			const arrival = new Date(
-				arrivalArray[0].year,
-				arrivalArray[0].month,
-				arrivalArray[0].day,
-				arrivalArray[1]?.hours ?? 0,
-				arrivalArray[1]?.minutes ?? 0,
-				arrivalArray[1]?.seconds ?? 0,
-			);
+			const array = filter.arrival;
+			const arrival = new Date(array[0].year, array[0].month, array[0].day, array[1]?.hours ?? 0, array[1]?.minutes ?? 0, array[1]?.seconds ?? 0);
 
-			records = records.filter((record) => (arrivalArray[1] ? isEqual(record.arrival, arrival) : isSameDay(record.arrival, arrival)));
+			records = records.filter((record) => (array[1] ? isEqual(record.arrival, arrival) : isSameDay(record.arrival, arrival)));
 		}
 		if (filter.leaving && filter.leaving[0]) {
-			const arrivalArray = filter.leaving;
-			const leaving = new Date(
-				arrivalArray[0].year,
-				arrivalArray[0].month,
-				arrivalArray[0].day,
-				arrivalArray[1]?.hours ?? 0,
-				arrivalArray[1]?.minutes ?? 0,
-				arrivalArray[1]?.seconds ?? 0,
-			);
+			const array = filter.leaving;
+			const leaving = new Date(array[0].year, array[0].month, array[0].day, array[1]?.hours ?? 0, array[1]?.minutes ?? 0, array[1]?.seconds ?? 0);
 
-			records = records.filter((record) => (arrivalArray[1] ? isEqual(record.leaving, leaving) : isSameDay(record.leaving, leaving)));
+			records = records.filter((record) => record.leaving && (array[1] ? isEqual(record.leaving, leaving) : isSameDay(record.leaving, leaving)));
 		}
 		if (filter.from) {
 			const from = filter.from;

@@ -37,7 +37,7 @@ interface IHeatmapSeries<T> {
 		<ng-container *transloco="let transloco">
 			<div class="flex flex-col justify-center h-full grow overflow-y-auto overflow-x-hidden">
 				<div class="flex gap-2 items-center" data-html2canvas-ignore>
-					<tui-input-date-range toNativeDate [(ngModel)]="dateRange" class="w-64">
+					<tui-input-date-range [(ngModel)]="dateRange" class="w-64">
 						{{ transloco('heatmap.chooseRange') }}
 						<input placeholder="From - To" tuiTextfieldLegacy />
 					</tui-input-date-range>
@@ -139,7 +139,10 @@ export class HeatMapComponent {
 	);
 
 	public readonly discharge = computed(() =>
-		this.heatMap().map((heatMapItem) => ({ key: heatMapItem.key, value: this.data().filter((item) => isSameDay(item.leaving, heatMapItem.key)) })),
+		this.heatMap().map((heatMapItem) => ({
+			key: heatMapItem.key,
+			value: this.data().filter((item) => item.leaving && isSameDay(item.leaving, heatMapItem.key)),
+		})),
 	);
 
 	public readonly chart = computed(() => {

@@ -6,7 +6,7 @@ export function mapRecordToResponse(record: Record): IRecordResponse {
 		uuid: record.uuid,
 		id: record.id,
 		arrival: record.arrival,
-		leaving: record.leaving,
+		leaving: record.leaving ?? undefined,
 		from: record.from,
 		to: record.to,
 		specialty: record.specialty,

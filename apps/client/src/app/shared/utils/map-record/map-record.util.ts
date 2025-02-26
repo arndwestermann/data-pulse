@@ -3,7 +3,7 @@ import { IRecord, IRecordDto } from '../../models';
 
 export function mapDtoToRecord(dto: IRecordDto): IRecord {
 	const arrival = parseJSON(dto.arrival);
-	const leaving = parseJSON(dto.leaving);
+	const leaving = dto.leaving ? parseJSON(dto.leaving) : undefined;
 	return {
 		uuid: dto.uuid,
 		id: dto.id,
@@ -21,7 +21,7 @@ export function mapRecordToDto(record: IRecord): IRecordDto {
 		id: record.id,
 		from: record.from,
 		to: record.to,
-		leaving: record.leaving.toISOString(),
+		leaving: record.leaving?.toISOString(),
 		arrival: record.arrival.toISOString(),
 		specialty: record.specialty,
 	};

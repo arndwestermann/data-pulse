@@ -34,7 +34,7 @@ export class RecordService {
 
 	private readonly createOrUpdateRecordSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord | null }>();
 	private readonly readRecordsSubject = new Subject<void>();
-	private readonly createRecordsSubject = new Subject<{ records: IRecord[]; component: PolymorpheusComponent<unknown> }>();
+	private readonly createRecordsSubject = new Subject<IRecord[]>();
 	private readonly deleteSelectedRecordsSubject = new Subject<IRecord[]>();
 	private readonly deleteRecordSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord }>();
 
@@ -55,13 +55,6 @@ export class RecordService {
 	);
 
 	private readonly createRecords$ = this.createRecordsSubject.pipe(
-		// TODO: Remove dialog
-		switchMap(({ records, component }) =>
-			this.dialogService.open<boolean>(component, { dismissible: true, size: 'm' }).pipe(
-				filter((value) => value),
-				map(() => records),
-			),
-		),
 		switchMap((records) => {
 			const requests$ = records.map((record) => this.http.post<IRecordDto>(`${environment.baseUrl}/record`, mapRecordToDto(record)));
 			return requests$.length ? forkJoin(requests$) : of([]);
@@ -148,8 +141,8 @@ export class RecordService {
 		this.deleteRecordSubject.next({ component, record });
 	}
 
-	public addRecords(component: PolymorpheusComponent<unknown>, records: IRecord[]) {
-		this.createRecordsSubject.next({ records, component });
+	public addRecords(records: IRecord[]) {
+		this.createRecordsSubject.next(records);
 	}
 
 	public deleteSelectedRecords(records: IRecord[]) {

@@ -72,9 +72,9 @@ const thirdPartyImports = [TranslocoDirective];
 			<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
 				<tui-icon icon="@tui.fa.solid.plus" />
 			</button>
-			<button type="button" tuiButton appearance="primary" size="s" (click)="fileInput.click()">
+			<!--<button type="button" tuiButton appearance="primary" size="s" (click)="fileInput.click()">
 				<tui-icon icon="@tui.fa.solid.upload" />
-			</button>
+			</button> -->
 			<input #fileInput class="hidden" type="file" accept=".csv" [multiple]="false" (change)="importFile($event)" />
 			<button
 				type="button"
@@ -514,7 +514,7 @@ export class RecordsComponent implements AfterViewInit {
 			console.log(parsedCsv);
 			console.log(records);
 
-			this.recordService.addRecords(new PolymorpheusComponent(ConfirmDeleteComponent), records);
+			this.recordService.addRecords(records);
 		};
 
 		fileReader.readAsText(file);

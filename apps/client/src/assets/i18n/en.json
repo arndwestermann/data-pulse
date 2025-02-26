@@ -78,6 +78,7 @@
 		"required": "{{ field }} is required",
 		"minLength": "Password must be at least 8 characters",
 		"pattern": "Password must have at least 1 number and 1 special character",
-		"mustMatch": "Passwords must match"
+		"mustMatch": "Passwords must match",
+		"idExists": "Id already exists"
 	}
 }

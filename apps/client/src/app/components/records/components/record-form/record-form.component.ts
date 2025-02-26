@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { TuiButton, TuiDialogContext, TuiTextfield } from '@taiga-ui/core';
+import { TuiButton, TuiDialogContext, TuiError, TuiTextfield } from '@taiga-ui/core';
 
 import { TuiSelectModule, TuiTextfieldControllerModule, TuiInputDateTimeModule, TuiComboBoxModule } from '@taiga-ui/legacy';
 
@@ -11,8 +11,10 @@ import { TuiAutoFocus, TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { TuiDataListWrapper, TuiFilterByInputPipe, TuiStringifyContentPipe } from '@taiga-ui/kit';
 import { IRecordForm } from '../../models/record-form.model';
 import { NativeDatetimeTransformerDirective } from '../../../../shared/directives';
+import { RecordService } from '../../../../shared/services';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { IRecord, SPECIALTIES, Specialty } from '../../../../shared/models';
+import { idExitsValidator } from './id-exists.validator';
 
 const angularImports = [ReactiveFormsModule, NgTemplateOutlet];
 const firstPartyImports = [NativeDatetimeTransformerDirective];
@@ -28,6 +30,7 @@ const taigaUiImports = [
 	TuiStringifyContentPipe,
 	TuiComboBoxModule,
 	TuiAutoFocus,
+	TuiError,
 ];
 
 @Component({
@@ -37,6 +40,9 @@ const taigaUiImports = [
 		<form class="flex flex-col space-y-2" [formGroup]="form" *transloco="let transloco">
 			<div class="w-full">
 				<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'id', type: 'text', autoFocus: true }" />
+				@if (form.controls.id.hasError('idExists')) {
+					<tui-error [error]="transloco('validation.idExists')" />
+				}
 			</div>
 			<div class="flex space-x-2">
 				<div class="w-1/2">
@@ -57,7 +63,7 @@ const taigaUiImports = [
 
 			<ng-container *ngTemplateOutlet="dropdownTemplate; context: { formControlName: 'specialty', array: specialties() }" />
 
-			<button tuiButton class="w-full" type="button" size="m" (click)="save()">
+			<button tuiButton class="w-full" type="button" size="m" [disabled]="form.invalid" (click)="save()">
 				<span class="mr-2 font-normal">{{ transloco('general.save') }}</span>
 			</button>
 
@@ -109,13 +115,18 @@ const taigaUiImports = [
 })
 export class RecordFormComponent {
 	private readonly translocoService = inject(TranslocoService);
+	private readonly recordsService = inject(RecordService);
 
 	public readonly context = inject<TuiDialogContext<IRecord, IRecord | null>>(POLYMORPHEUS_CONTEXT);
 	public readonly specialties = signal(SPECIALTIES);
 
 	public readonly form = new FormGroup<IRecordForm>({
 		uuid: new FormControl<string | null>(this.context.data?.uuid ?? null),
-		id: new FormControl<string>(this.context.data?.id ?? '', { nonNullable: true }),
+		id: new FormControl<string>(this.context.data?.id ?? '', {
+			nonNullable: true,
+			asyncValidators: [idExitsValidator(this.recordsService)],
+			updateOn: 'blur',
+		}),
 		arrival: new FormControl<Date>(this.context.data?.arrival ?? new Date(), { nonNullable: true }),
 		leaving: new FormControl<Date>(this.context.data?.leaving ?? new Date(), { nonNullable: true }),
 		from: new FormControl<string>(this.context.data?.from ?? '', { nonNullable: true }),

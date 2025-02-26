@@ -16,22 +16,13 @@ export function mapDtoToRecord(dto: IRecordDto): IRecord {
 }
 
 export function mapRecordToDto(record: IRecord): IRecordDto {
-	let arrival = '';
-	let leaving = '';
-	try {
-		arrival = record.arrival.toISOString();
-		leaving = record.leaving?.toISOString() ?? '';
-	} catch (err) {
-		console.log(record);
-		throw new Error(err as any);
-	}
 	return {
 		uuid: record.uuid,
 		id: record.id,
 		from: record.from,
 		to: record.to,
-		leaving: leaving ?? '',
-		arrival: arrival ?? '',
+		leaving: record.leaving?.toISOString(),
+		arrival: record.arrival.toISOString(),
 		specialty: record.specialty,
 	};
 }

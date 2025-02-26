@@ -1,7 +1,23 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../../environments/environment';
-import { catchError, expand, filter, forkJoin, from, map, merge, Observable, of, scan, shareReplay, startWith, Subject, switchMap } from 'rxjs';
+import {
+	catchError,
+	EMPTY,
+	expand,
+	filter,
+	forkJoin,
+	from,
+	map,
+	merge,
+	Observable,
+	of,
+	scan,
+	shareReplay,
+	startWith,
+	Subject,
+	switchMap,
+} from 'rxjs';
 import { IRecord, IRecordDto, NEVER_ASK_DELETE_AGAIN_STORAGE_KEY, TCrud } from '../../models';
 import { mapDtoToRecord, mapRecordToDto } from '../../utils';
 import { TuiDialogService } from '@taiga-ui/core';
@@ -26,7 +42,7 @@ export class RecordService {
 		switchMap(({ component, record }) =>
 			this.dialogService
 				.open<IRecord>(component, { data: record, dismissible: true, size: 'm' })
-				.pipe(expand(() => this.dialogService.open<IRecord>(component, { data: record, dismissible: true, size: 'm' }))),
+				.pipe(expand(() => (record ? EMPTY : this.dialogService.open<IRecord>(component, { data: record, dismissible: true, size: 'm' })))),
 		),
 		map((record) => mapRecordToDto(record)),
 		switchMap((record) => {

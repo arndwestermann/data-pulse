@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { DrawerComponent, DrawerContainerComponent } from '../drawer';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TuiAutoColorPipe, TuiButton, TuiDataList, TuiDropdown, TuiIcon, TuiInitialsPipe } from '@taiga-ui/core';
@@ -61,6 +62,14 @@ export class NavigationComponent {
 	private readonly router = inject(Router);
 	private readonly authService = inject(AuthenticationService);
 	private readonly userService = inject(UserService);
+	private readonly breakpointObserver = inject(BreakpointObserver);
+
+	public readonly isXSmall = toSignal(
+		this.breakpointObserver.observe([Breakpoints.XSmall]).pipe(map((breakPoints) => breakPoints.breakpoints[Breakpoints.XSmall])),
+		{
+			initialValue: false,
+		},
+	);
 
 	public readonly isDrawerOpen = signal<boolean>(false);
 	public readonly routes = signal(this.router.config[0].children?.filter((route) => route.data?.['exclude'] === false) ?? []);

@@ -74,7 +74,8 @@ const taigaUiImports = [
 								[tuiAutoFocus]="autoFocus ?? false"
 								[formControlName]="formControlName"
 								[min]="formControlName === 'arrival' ? null : minDate()"
-								[tuiTextfieldLabelOutside]="true">
+								[tuiTextfieldLabelOutside]="true"
+								[tuiTextfieldCleaner]="true">
 								<input tuiTextfieldLegacy (focus)="onFocused($event)" />
 							</tui-input-date-time>
 						}

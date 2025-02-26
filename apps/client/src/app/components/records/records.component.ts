@@ -514,7 +514,7 @@ export class RecordsComponent implements AfterViewInit {
 			console.log(parsedCsv);
 			console.log(records);
 
-			// this.recordService.addRecords(records);
+			this.recordService.addRecords(new PolymorpheusComponent(ConfirmDeleteComponent), records);
 		};
 
 		fileReader.readAsText(file);

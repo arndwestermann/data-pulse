@@ -15,7 +15,7 @@
 				"browser": "apps/client/src/main.ts",
 				"polyfills": [],
 				"tsConfig": "apps/client/tsconfig.app.json",
-				"inlineStyleLanguage": "scss",
+				"inlineStyleLanguage": "css",
 				"assets": [
 					{
 						"glob": "**/*",
@@ -43,7 +43,7 @@
 					"@taiga-ui/core/styles/taiga-ui-theme.less",
 					"@taiga-ui/core/styles/taiga-ui-fonts.less",
 					"@taiga-ui/addon-mobile/styles/taiga-ui-mobile.less",
-					"apps/client/src/styles.scss"
+					"apps/client/src/styles.css"
 				],
 				"scripts": []
 			},

@@ -1,5 +1,5 @@
 @tailwind base;
-// Kudos to https://github.com/niklasvh/html2canvas/issues/2775#issuecomment-1204988157
+/* Kudos to https://github.com/niklasvh/html2canvas/issues/2775#issuecomment-1204988157 */
 @layer base {
 	img {
 		@apply inline-block;
@@ -15,7 +15,7 @@
 :root [tuiTheme='light'] {
 	color-scheme: light;
 
-	// Backgrounds
+	/* Backgrounds */
 	--tui-background-base: #fff;
 	--tui-background-base-alt: #f6f6f6;
 	--tui-background-neutral-1: rgba(0, 0, 0, 0.04);
@@ -36,14 +36,14 @@
 	--tui-background-elevation-1: #fff;
 	--tui-background-elevation-2: #fff;
 	--tui-background-elevation-3: #fff;
-	// Other
+	/* Other */
 	--tui-service-autofill-background: #fff5c0;
 	--tui-service-selection-background: rgba(112, 182, 246, 0.12);
 	--tui-service-backdrop: rgba(0, 0, 0, 0.75);
 	--tui-border-normal: rgba(0, 0, 0, 0.1);
 	--tui-border-hover: rgba(0, 0, 0, 0.16);
 	--tui-border-focus: rgba(51, 51, 51, 0.64);
-	// Statuses
+	/* Statuses */
 	--tui-status-negative: rgba(244, 87, 37, 1);
 	--tui-status-negative-pale: rgba(244, 87, 37, 0.12);
 	--tui-status-negative-pale-hover: rgba(244, 87, 37, 0.24);
@@ -57,7 +57,7 @@
 	--tui-status-info-pale: rgba(112, 182, 246, 0.12);
 	--tui-status-info-pale-hover: rgba(112, 182, 246, 0.24);
 	--tui-status-neutral: rgb(121, 129, 140);
-	// Text
+	/* Text */
 	--tui-text-primary: rgba(27, 31, 59, 1);
 	--tui-text-secondary: rgba(27, 31, 59, 0.65);
 	--tui-text-tertiary: rgba(27, 31, 59, 0.4);
@@ -69,7 +69,7 @@
 	--tui-text-positive-hover: #7ac5aa;
 	--tui-text-negative: #dd4c1e;
 	--tui-text-negative-hover: #e38163;
-	// Charts
+	/* Charts */
 	--tui-chart-categorical-00: var(--tui-background-accent-1);
 	--tui-chart-categorical-01: #ea97c4;
 	--tui-chart-categorical-02: #a0c5df;
@@ -93,7 +93,7 @@
 	--tui-chart-categorical-20: #aadc42;
 	--tui-chart-categorical-21: #3682db;
 	--tui-chart-categorical-22: #34b41f;
-	// Shadows
+	/* Shadows */
 	--tui-shadow-small: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.1);
 	--tui-shadow-small-hover: 0 1rem 2.5rem rgba(0, 0, 0, 0.14);
 	--tui-shadow-medium: 0 0.375rem 2rem rgba(0, 0, 0, 0.12);
@@ -104,7 +104,7 @@
 :root [tuiTheme='dark'] {
 	color-scheme: dark;
 
-	// Backgrounds
+	/* Backgrounds */
 	--tui-background-base: #222;
 	--tui-background-base-alt: #333;
 	--tui-background-neutral-1: rgba(255, 255, 255, 0.08);
@@ -119,12 +119,12 @@
 	--tui-background-elevation-1: #292929;
 	--tui-background-elevation-2: #333;
 	--tui-background-elevation-3: #333;
-	// Other
+	/* Other */
 	--tui-service-autofill-background: rgb(85, 74, 42);
 	--tui-border-normal: rgba(255, 255, 255, 0.14);
 	--tui-border-hover: rgba(255, 255, 255, 0.6);
 	--tui-border-focus: rgba(255, 255, 255, 0.64);
-	// Statuses
+	/* Statuses */
 	--tui-status-negative: rgba(255, 140, 103, 1);
 	--tui-status-negative-pale: rgba(244, 87, 37, 0.32);
 	--tui-status-negative-pale-hover: rgba(244, 87, 37, 0.4);
@@ -138,7 +138,7 @@
 	--tui-status-info-pale: rgba(112, 182, 246, 0.32);
 	--tui-status-info-pale-hover: rgba(112, 182, 246, 0.4);
 	--tui-status-neutral: rgb(149, 155, 164);
-	// Text
+	/* Text */
 	--tui-text-primary: rgba(255, 255, 255, 1);
 	--tui-text-secondary: rgba(255, 255, 255, 0.72);
 	--tui-text-tertiary: rgba(255, 255, 255, 0.6);

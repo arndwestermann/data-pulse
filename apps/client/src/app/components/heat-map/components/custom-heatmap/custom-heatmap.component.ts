@@ -88,7 +88,7 @@ interface RectItem {
 		</ngx-charts-chart>
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	styleUrls: ['./custom-heatmap.component.scss'],
+	styleUrls: ['./custom-heatmap.component.css'],
 	encapsulation: ViewEncapsulation.None,
 })
 export class CustomHeatmapComponent extends BaseChartComponent {

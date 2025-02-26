@@ -64,6 +64,8 @@ import { TuiPassword } from '@taiga-ui/kit';
 		</form>
 	`,
 	styles: `
+		@reference '../../../styles.css';
+
 		:host {
 			@apply h-full w-full p-2 flex justify-center items-center;
 		}

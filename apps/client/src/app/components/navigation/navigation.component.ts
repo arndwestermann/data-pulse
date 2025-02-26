@@ -20,6 +20,8 @@ const thirdPartyImports = [TranslocoDirective];
 	imports: [DrawerContainerComponent, DrawerComponent, ...angularImports, ...taigaUiImports, ...thirdPartyImports],
 	templateUrl: './navigation.component.html',
 	styles: `
+		@reference '../../../styles.css';
+
 		:host {
 			@apply flex flex-col h-full;
 		}

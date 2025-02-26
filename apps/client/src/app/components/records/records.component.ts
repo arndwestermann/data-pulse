@@ -68,7 +68,7 @@ const thirdPartyImports = [TranslocoDirective];
 	selector: 'dp-records',
 	imports: [...angularImports, ...taigaUiImports, ...firstPartyImports, ...thirdPartyImports],
 	template: `
-		<div class="flex flex-shrink-0 space-x-2" *transloco="let transloco; prefix: 'general'">
+		<div class="flex shrink-0 gap-2" *transloco="let transloco; prefix: 'general'">
 			<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
 				<tui-icon icon="@tui.fa.solid.plus" />
 			</button>
@@ -248,8 +248,10 @@ const thirdPartyImports = [TranslocoDirective];
 		</tui-scrollbar>
 	`,
 	styles: `
+		@reference '../../../styles.css';
+
 		:host {
-			@apply flex flex-col h-full p-4 space-y-4;
+			@apply flex flex-col h-full p-4 gap-4;
 		}
 
 		[tuiTh],
@@ -292,7 +294,7 @@ const thirdPartyImports = [TranslocoDirective];
 		}
 
 		[tuiAppearance][data-appearance='search'] {
-			@apply focus:outline-none;
+			@apply focus:outline-hidden;
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,

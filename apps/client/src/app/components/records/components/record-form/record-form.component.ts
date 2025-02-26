@@ -37,14 +37,14 @@ const taigaUiImports = [
 	selector: 'dp-record-form',
 	imports: [...angularImports, ...firstPartyImports, ...thirdPartyImports, ...taigaUiImports],
 	template: `
-		<form class="flex flex-col space-y-2" [formGroup]="form" *transloco="let transloco">
+		<form class="flex flex-col gap-2" [formGroup]="form" *transloco="let transloco">
 			<div class="w-full">
 				<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'id', type: 'text', autoFocus: true }" />
 				@if (form.controls.id.hasError('idExists')) {
 					<tui-error [error]="transloco('validation.idExists')" />
 				}
 			</div>
-			<div class="flex space-x-2">
+			<div class="flex gap-2">
 				<div class="w-1/2">
 					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'arrival', type: 'datetime' }" />
 				</div>
@@ -52,7 +52,7 @@ const taigaUiImports = [
 					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'leaving', type: 'datetime' }" />
 				</div>
 			</div>
-			<div class="flex space-x-2">
+			<div class="flex gap-2">
 				<div class="w-1/2">
 					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'from', type: 'text' }" />
 				</div>
@@ -107,6 +107,8 @@ const taigaUiImports = [
 		</form>
 	`,
 	styles: `
+		@reference '../../../../../styles.css';
+
 		:host {
 			@apply block;
 		}

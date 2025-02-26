@@ -17,6 +17,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 		</tui-root>
 	`,
 	styles: `
+		@reference '../styles.css';
+
 		:host {
 			@apply block h-full;
 		}

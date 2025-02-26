@@ -48,7 +48,7 @@
 						<a
 							[@nav-animation-text]="isDrawerOpen() ? 'opened' : 'closed'"
 							*transloco="let transloco; prefix: 'routes'"
-							class="ml-2 flex rounded w-full">
+							class="ml-2 flex rounded-sm w-full">
 							{{ transloco(route.data?.['translationKey']) }}
 						</a>
 					}

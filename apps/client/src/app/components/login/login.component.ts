@@ -53,6 +53,8 @@ import { map, merge } from 'rxjs';
 		</ng-container>
 	`,
 	styles: `
+		@reference '../../../styles.css';
+
 		:host {
 			@apply flex flex-col items-center justify-center gap-2 p-2 h-full;
 		}

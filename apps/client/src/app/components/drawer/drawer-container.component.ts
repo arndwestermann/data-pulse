@@ -4,17 +4,15 @@ import {
 	ChangeDetectorRef,
 	Component,
 	ElementRef,
-	EventEmitter,
 	inject,
-	Input,
-	OnChanges,
-	OnDestroy,
-	Output,
+	input,
+	model,
+	output,
 	PLATFORM_ID,
-	SimpleChanges,
-	ViewChild,
+	signal,
+	viewChild,
 } from '@angular/core';
-import { NgClass, NgStyle, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 
 import { DrawerComponent } from './drawer.component';
 
@@ -23,15 +21,15 @@ import { DrawerComponent } from './drawer.component';
 // Based on https://github.com/angular/material2/tree/master/src/lib/sidenav
 @Component({
 	selector: 'dp-drawer-container',
-	imports: [NgClass, NgStyle],
+	imports: [],
 	template: `
-		@if (showBackdrop) {
-			<div aria-hidden="true" class="drawer__backdrop" [ngClass]="backdropClass" (click)="_onBackdropClicked()"></div>
+		@if (showBackdrop()) {
+			<div aria-hidden="true" class="drawer__backdrop" [class]="backdropClass()" (click)="onBackdropClicked()"></div>
 		}
 
-		<ng-content select="drawer,[drawer]" />
-		<div #drawerContent class="drawer__content" [class.drawer__content--animate]="animate" [ngClass]="contentClass" [ngStyle]="_getContentStyle()">
-			<ng-content select="[drawer-content]" />
+		<ng-content select="dp-drawer,[dp-drawer]"></ng-content>
+		<div #drawerContent class="drawer__content" [class.drawer__content--animate]="animate()" [class]="contentClass()" [style]="contentStyle()">
+			<ng-content select="[drawer-content]"></ng-content>
 		</div>
 	`,
 	styles: [
@@ -79,86 +77,56 @@ import { DrawerComponent } from './drawer.component';
 	],
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DrawerContainerComponent implements AfterContentInit, OnChanges, OnDestroy {
-	private readonly _ref = inject(ChangeDetectorRef);
+export class DrawerContainerComponent implements AfterContentInit {
 	private readonly platformId = inject(PLATFORM_ID);
-	// TODO: Refactor to signals approach
-	@Input() animate = true;
+	private readonly cdr = inject(ChangeDetectorRef);
 
-	@Input() allowDrawerBackdropControl = true;
-	@Input() showBackdrop = false;
-	@Output() showBackdropChange = new EventEmitter<boolean>();
-	@Output() backdropClicked = new EventEmitter<null>();
+	private readonly isBrowser = signal<boolean>(isPlatformBrowser(this.platformId));
+	private readonly drawers = signal<DrawerComponent[]>([]);
 
-	@Input() contentClass = '';
-	@Input() backdropClass = '';
+	private readonly resizeObserver: ResizeObserver = new ResizeObserver(() => {
+		this.cdr.markForCheck();
+	});
 
-	@ViewChild('drawerContent', { static: true }) private drawerContent!: ElementRef;
+	private readonly drawerContent = viewChild.required<ElementRef<HTMLElement>>('drawerContent');
 
-	private _drawers: Array<DrawerComponent> = [];
+	public readonly location = input<string>();
+	public readonly animate = input<boolean>(true);
+	public readonly allowDrawerBackdropControl = input<boolean>(true);
+	public readonly showBackdrop = model<boolean>(false);
+	public readonly contentClass = input<string>('');
+	public readonly backdropClass = input<string>('');
 
-	private resizeObserver!: ResizeObserver;
+	public readonly backdropClicked = output<null>();
 
-	private _isBrowser: boolean;
+	public ngAfterContentInit(): void {
+		if (!this.isBrowser()) return;
 
-	constructor() {
-		this._isBrowser = isPlatformBrowser(this.platformId);
-
-		this.resizeObserver = new ResizeObserver(() => {
-			this._markForCheck();
-		});
-	}
-
-	ngAfterContentInit(): void {
-		if (!this._isBrowser) {
-			return;
-		}
-
-		this._onToggle();
-		this.resizeObserver.observe(this.drawerContent.nativeElement);
-	}
-
-	ngOnChanges(changes: SimpleChanges): void {
-		if (!this._isBrowser) {
-			return;
-		}
-
-		if (changes['showBackdrop']) {
-			this.showBackdropChange.emit(changes['showBackdrop'].currentValue);
-		}
-	}
-
-	ngOnDestroy(): void {
-		if (!this._isBrowser) {
-			return;
-		}
-
-		this._unsubscribe();
+		this.toggleBackdrop();
+		this.resizeObserver.observe(this.drawerContent().nativeElement);
 	}
 
 	/**
-	 * @internal
 	 *
 	 * Adds a drawer to the container's list of drawers.
 	 *
 	 * @param drawer {DrawerComponent} A drawer within the container to register.
 	 */
-	_addDrawer(drawer: DrawerComponent) {
-		this._drawers.push(drawer);
-		this._subscribe(drawer);
+	public addDrawer(drawer: DrawerComponent) {
+		this.drawers.update((value) => [...value, drawer]);
+		this.subscribeDrawerEvents(drawer);
 	}
 
 	/**
-	 * @internal
 	 *
 	 * Removes a drawer from the container's list of drawers.
 	 *
 	 * @param drawer {DrawerComponent} The drawer to remove.
 	 */
-	_removeDrawer(drawer: DrawerComponent) {
-		const index = this._drawers.indexOf(drawer);
+	public removeDrawer(drawer: DrawerComponent) {
+		const index = this.drawers().indexOf(drawer);
 		if (index !== -1) {
-			this._drawers.splice(index, 1);
+			this.drawers.update((value) => value.splice(index, 1));
 		}
 	}
 
@@ -169,7 +137,7 @@ export class DrawerContainerComponent implements AfterContentInit, OnChanges, On
 	 *
 	 * @return {CSSStyleDeclaration} margin styles for the page content.
 	 */
-	_getContentStyle(): CSSStyleDeclaration {
+	public contentStyle(): CSSStyleDeclaration {
 		let left = 0,
 			right = 0,
 			top = 0,
@@ -179,36 +147,44 @@ export class DrawerContainerComponent implements AfterContentInit, OnChanges, On
 		let heightStyle = '';
 		let widthStyle = '';
 
-		for (const drawer of this._drawers) {
+		for (const drawer of this.drawers()) {
+			const mode = drawer.mode();
+			const opened = drawer.opened();
+			const position = drawer.position();
+			const isLeftOrRight = drawer.isLeftOrRight();
+			const isLeftOrTop = drawer.isLeftOrTop();
+			const width = drawer.getWidth();
+			const height = drawer.getHeight();
+
 			// Slide mode: we need to translate the entire container
-			if (drawer._isModeSlide) {
-				if (drawer.opened) {
-					const transformDir: string = drawer._isLeftOrRight ? 'X' : 'Y';
-					const transformAmt = `${drawer._isLeftOrTop ? '' : '-'}${drawer._isLeftOrRight ? drawer._width : drawer._height}`;
+			if (mode === 'slide') {
+				if (opened) {
+					const transformDir = isLeftOrRight ? 'X' : 'Y';
+					const transformAmt = `${isLeftOrTop ? '' : '-'}${isLeftOrRight ? width : height}`;
 
 					transformStyle = `translate${transformDir}(${transformAmt}px)`;
 				}
 			}
 
 			// Create a space for the drawer
-			if ((drawer._isModePush && drawer.opened) || drawer.dock) {
+			if ((mode === 'push' && opened) || drawer.dock()) {
 				let paddingAmt = 0;
 
-				if (drawer._isModeSlide && drawer.opened) {
-					if (drawer._isLeftOrRight) {
+				if (mode === 'slide' && opened) {
+					if (isLeftOrRight) {
 						widthStyle = '100%';
 					} else {
 						heightStyle = '100%';
 					}
 				} else {
-					if (drawer._isDocked || (drawer._isModeOver && drawer.dock)) {
-						paddingAmt = drawer._dockedSize;
+					if (drawer.isDocked() || (mode === 'over' && drawer.dock())) {
+						paddingAmt = drawer.dockedSizeNumber();
 					} else {
-						paddingAmt = drawer._isLeftOrRight ? drawer._width : drawer._height;
+						paddingAmt = isLeftOrRight ? width : height;
 					}
 				}
 
-				switch (drawer.position) {
+				switch (position) {
 					case 'left':
 						left = Math.max(left, paddingAmt);
 						break;
@@ -243,75 +219,45 @@ export class DrawerContainerComponent implements AfterContentInit, OnChanges, On
 	 * Closes drawers when the backdrop is clicked, if they have the
 	 * `closeOnClickBackdrop` option set.
 	 */
-	_onBackdropClicked(): void {
+	public onBackdropClicked(): void {
 		let backdropClicked = false;
-		for (const drawer of this._drawers) {
-			if (drawer.opened && drawer.showBackdrop && drawer.closeOnClickBackdrop) {
+		for (const drawer of this.drawers()) {
+			if (drawer.opened() && drawer.showBackdrop() && drawer.closeOnClickBackdrop()) {
 				drawer.close();
 				backdropClicked = true;
 			}
 		}
 
 		if (backdropClicked) {
-			this.backdropClicked.emit();
+			this.backdropClicked.emit(null);
 		}
 	}
 
 	/**
-	 * Subscribes from a drawer events to react properly.
+	 * Subscribes drawer events to react properly.
 	 */
-	private _subscribe(drawer: DrawerComponent): void {
-		drawer.openStart.subscribe(() => this._onToggle());
-		drawer.openEnd.subscribe(() => this._markForCheck());
+	private subscribeDrawerEvents(drawer: DrawerComponent): void {
+		drawer.openStart.subscribe(() => this.toggleBackdrop());
+		drawer.openEnd.subscribe(() => this.cdr.markForCheck());
 
-		drawer.closeStart.subscribe(() => this._onToggle());
-		drawer.closeEnd.subscribe(() => this._markForCheck());
+		drawer.closeStart.subscribe(() => this.toggleBackdrop());
+		drawer.closeEnd.subscribe(() => this.cdr.markForCheck());
 
-		drawer.modeChange.subscribe(() => this._markForCheck());
-		drawer.positionChange.subscribe(() => this._markForCheck());
+		drawer.modeChange.subscribe(() => this.cdr.markForCheck());
+		drawer.positionChange.subscribe(() => this.cdr.markForCheck());
 
-		drawer._onRerender.subscribe(() => this._markForCheck());
-	}
-
-	/**
-	 * Unsubscribes from all drawers.
-	 */
-	private _unsubscribe(): void {
-		for (const drawer of this._drawers) {
-			drawer.openStart.unsubscribe();
-			drawer.openEnd.unsubscribe();
-
-			drawer.closeStart.unsubscribe();
-			drawer.closeEnd.unsubscribe();
-
-			drawer.modeChange.unsubscribe();
-			drawer.positionChange.unsubscribe();
-
-			drawer._onRerender.unsubscribe();
-		}
+		drawer.drawerRerendered.subscribe(() => this.cdr.markForCheck());
 	}
 
 	/**
 	 * Check if we should show the backdrop when a drawer is toggled.
 	 */
-	private _onToggle(): void {
-		if (this._drawers.length > 0 && this.allowDrawerBackdropControl) {
+	private toggleBackdrop(): void {
+		if (this.drawers().length > 0 && this.allowDrawerBackdropControl()) {
 			// Show backdrop if a single open drawer has it set
-			const hasOpen = this._drawers.some((drawer) => drawer.opened && drawer.showBackdrop);
+			const hasOpen = this.drawers().some((drawer) => drawer.opened() && drawer.showBackdrop());
 
-			this.showBackdrop = hasOpen;
-			this.showBackdropChange.emit(hasOpen);
+			this.showBackdrop.set(hasOpen);
 		}
-
-		setTimeout(() => {
-			this._markForCheck();
-		});
-	}
-
-	/**
-	 * Triggers change detection to recompute styles.
-	 */
-	private _markForCheck(): void {
-		this._ref.markForCheck();
 	}
 }

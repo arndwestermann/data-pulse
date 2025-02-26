@@ -124,7 +124,7 @@ export class RecordFormComponent {
 		uuid: new FormControl<string | null>(this.context.data?.uuid ?? null),
 		id: new FormControl<string>(this.context.data?.id ?? '', {
 			nonNullable: true,
-			asyncValidators: [idExitsValidator(this.recordsService)],
+			asyncValidators: this.context.data?.id ? [] : [idExitsValidator(this.recordsService)],
 			updateOn: 'blur',
 		}),
 		arrival: new FormControl<Date>(this.context.data?.arrival ?? new Date(), { nonNullable: true }),

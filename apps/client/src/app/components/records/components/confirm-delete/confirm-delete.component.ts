@@ -12,11 +12,11 @@ import { FormsModule } from '@angular/forms';
 		<ng-container *transloco="let transloco">
 			<span class="text-xl font-bold">{{ transloco('dialogs.confirmDelete') }}</span>
 
-			<label class="flex items-center space-x-2 w-1/2">
+			<label class="flex items-center gap-2 w-1/2">
 				<input tuiCheckbox type="checkbox" [(ngModel)]="neverAskAgain" />
 				<span>{{ transloco('dialogs.neverAskAgain') }}</span>
 			</label>
-			<div class="flex space-x-2">
+			<div class="flex gap-2">
 				<button
 					class="w-1/2"
 					tuiButton
@@ -39,8 +39,10 @@ import { FormsModule } from '@angular/forms';
 		</ng-container>
 	`,
 	styles: `
+		@reference '../../../../../styles.css';
+
 		:host {
-			@apply flex flex-col space-y-8 text-center;
+			@apply flex flex-col gap-8 text-center;
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,

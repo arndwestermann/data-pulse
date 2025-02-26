@@ -1,42 +1,46 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
 	AfterContentInit,
 	ChangeDetectionStrategy,
-	ChangeDetectorRef,
 	Component,
 	ElementRef,
-	EventEmitter,
-	Input,
 	OnChanges,
 	OnDestroy,
 	OnInit,
-	Output,
 	PLATFORM_ID,
 	SimpleChanges,
-	ViewChild,
+	computed,
 	inject,
+	input,
+	model,
+	output,
+	signal,
+	viewChild,
 } from '@angular/core';
-import { NgClass, NgStyle, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 
 import { DrawerContainerComponent } from './drawer-container.component';
 import { isLTR, isIOS } from './utils';
 
 @Component({
 	selector: 'dp-drawer',
-	imports: [NgClass, NgStyle],
+	imports: [],
 	template: `
+		@let classOpen = ' drawer--' + (opened() ? 'opened' : 'closed');
+		@let classPosition = ' drawer--' + position();
+		@let classMode = ' drawer--' + mode();
+		@let class = classOpen + classPosition + classMode + ' ';
+
 		<aside
 			#drawer
 			role="complementary"
-			[attr.aria-hidden]="!opened"
-			[attr.aria-label]="ariaLabel"
-			class="drawer drawer--{{ opened ? 'opened' : 'closed' }} drawer--{{ position }} drawer--{{ mode }}"
-			[class.drawer--docked]="_isDocked"
-			[class.drawer--inert]="_isInert"
-			[class.drawer--animate]="animate"
-			[ngClass]="drawerClass"
-			[ngStyle]="_getStyle()">
-			<ng-content />
+			[attr.aria-hidden]="!opened()"
+			[attr.aria-label]="ariaLabel()"
+			[class]="'drawer' + class + drawerClass()"
+			[class.drawer--docked]="isDocked()"
+			[class.drawer--inert]="isInert()"
+			[class.drawer--animate]="animate()"
+			[style]="getStyle()">
+			<ng-content></ng-content>
 		</aside>
 	`,
 	styles: [
@@ -84,280 +88,202 @@ import { isLTR, isIOS } from './utils';
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnDestroy {
-	private readonly _container = inject(DrawerContainerComponent, { optional: true });
-	private readonly _ref = inject(ChangeDetectorRef);
+	private readonly container = inject(DrawerContainerComponent, { optional: true });
 	private readonly platformId = inject(PLATFORM_ID);
 
-	private _focusableElementsString: string =
-		'a[href], area[href], input:not([disabled]), select:not([disabled]),' +
-		'textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex], [contenteditable]';
-	private _focusableElements!: Array<HTMLElement>;
-	private _focusedBeforeOpen!: HTMLElement;
+	private readonly focusableElementsString = signal<string>(
+		'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex], [contenteditable]',
+	);
+	private readonly focusableElements = signal<HTMLElement[]>([]);
+	private readonly focusedBeforeOpen = signal<HTMLElement | null>(null);
 
-	private _tabIndexAttr = '__tabindex__';
-	private _tabIndexIndicatorAttr = '__drawer-tabindex__';
+	private readonly tabIndexAttr = signal<string>('__tabindex__');
+	private readonly tabIndexIndicatorAttr = signal<string>('__drawer-tabindex__');
 
-	private _wasCollapsed!: boolean;
+	private readonly wasCollapsed = signal<boolean>(false);
 
 	// Delay initial animation (issues #59, #112)
-	private _shouldAnimate!: boolean;
+	private readonly shouldAnimate = signal<boolean>(false);
 
-	private _clickEvent = 'click';
-	private _onClickOutsideAttached = false;
-	private _onKeyDownAttached = false;
-	private _onResizeAttached = false;
+	private readonly clickEvent = signal<string>('click');
+	private readonly onClickOutsideAttached = signal<boolean>(false);
+	private readonly onKeyDownAttached = signal<boolean>(false);
+	private readonly onResizeAttached = signal<boolean>(false);
 
-	private _isBrowser: boolean;
+	private readonly isBrowser = signal<boolean>(isPlatformBrowser(this.platformId));
 
-	// TODO: Refactor to signals approach
-	// `openedChange` allows for "2-way" data binding
-	@Input() opened = false;
-	@Output() openedChange: EventEmitter<boolean> = new EventEmitter<boolean>();
+	private readonly drawer = viewChild<ElementRef<HTMLElement>>('drawer');
 
-	@Input() mode: 'over' | 'push' | 'slide' = 'over';
-	@Input() dock = false;
-	@Input() dockedSize = '0px';
-	@Input() position: 'start' | 'end' | 'left' | 'right' | 'top' | 'bottom' = 'start';
-	@Input() animate = true;
+	public readonly location = input<string>();
+	public readonly opened = model(false);
+	public readonly openedChange = output<boolean>();
 
-	@Input() autoCollapseHeight = 0;
-	@Input() autoCollapseWidth = 0;
-	@Input() autoCollapseOnInit = true;
+	public readonly mode = input<'over' | 'push' | 'slide'>('over');
+	public readonly dock = input<boolean>(false);
+	public readonly dockedSize = input<string>('0px');
+	public readonly position = model<'start' | 'end' | 'left' | 'right' | 'top' | 'bottom'>('left');
+	public readonly animate = model<boolean>(true);
 
-	@Input() drawerClass = '';
+	public readonly autoCollapseHeight = input<number>(0);
+	public readonly autoCollapseWidth = input<number>(0);
+	public readonly autoCollapseOnInit = input<boolean>(true);
 
-	@Input() ariaLabel = '';
-	@Input() trapFocus = false;
-	@Input() autoFocus = true;
+	public readonly drawerClass = input<string>('');
 
-	@Input() showBackdrop = false;
-	@Input() closeOnClickBackdrop = false;
-	@Input() closeOnClickOutside = false;
+	public readonly ariaLabel = input<string>('');
+	public readonly trapFocus = input<boolean>(false);
+	public readonly autoFocus = input<boolean>(true);
 
-	@Input() keyClose = false;
-	@Input() keyCode = 27; // Default to ESC key
+	public readonly showBackdrop = input<boolean>(false);
+	public readonly closeOnClickBackdrop = input<boolean>(false);
+	public readonly closeOnClickOutside = input<boolean>(false);
 
-	@Output() contentInit: EventEmitter<null> = new EventEmitter<null>();
-	@Output() openStart: EventEmitter<null> = new EventEmitter<null>();
-	@Output() openEnd: EventEmitter<null> = new EventEmitter<null>();
-	@Output() closeStart: EventEmitter<null> = new EventEmitter<null>();
-	@Output() closeEnd: EventEmitter<null> = new EventEmitter<null>();
-	@Output() transitionEnd: EventEmitter<null> = new EventEmitter<null>();
-	@Output() modeChange: EventEmitter<string> = new EventEmitter<string>();
-	@Output() positionChange: EventEmitter<string> = new EventEmitter<string>();
+	public readonly keyClose = input<boolean>(false);
+	public readonly keyCode = input<string>('Escape'); // Default to ESC key
 
-	/** @internal */
-	@Output() _onRerender: EventEmitter<null> = new EventEmitter<null>();
-
-	/** @internal */
-	@ViewChild('drawer', { static: false }) _elDrawer!: ElementRef;
-
-	// Focus on open/close
-	// ==============================================================================================
+	public readonly contentInit = output();
+	public readonly openStart = output();
+	public readonly openEnd = output();
+	public readonly closeStart = output();
+	public readonly closeEnd = output();
+	public readonly transitionEnd = output();
+	public readonly modeChange = output<string>();
+	public readonly positionChange = output<string>();
+	public readonly drawerRerendered = output();
 
 	/**
-	 * Returns whether focus should be trapped within the drawer.
-	 *
-	 * @return {boolean} Trap focus inside drawer.
-	 */
-	private get _shouldTrapFocus(): boolean {
-		return this.opened && this.trapFocus;
-	}
-
-	// Helpers
-	// ==============================================================================================
-
-	/**
-	 * @internal
-	 *
-	 * Returns the rendered height of the drawer (or the docked size).
-	 * This is used in the drawer container.
-	 *
-	 * @return {number} Height of drawer.
-	 */
-	get _height(): number {
-		if (this._elDrawer.nativeElement) {
-			return this._isDocked ? this._dockedSize : this._elDrawer.nativeElement.offsetHeight;
-		}
-
-		return 0;
-	}
-
-	/**
-	 * @internal
-	 *
-	 * Returns the rendered width of the drawer (or the docked size).
-	 * This is used in the drawer container.
-	 *
-	 * @return {number} Width of drawer.
-	 */
-	get _width(): number {
-		if (this._elDrawer.nativeElement) {
-			return this._isDocked ? this._dockedSize : this._elDrawer.nativeElement.offsetWidth;
-		}
-
-		return 0;
-	}
-
-	/**
-	 * @internal
 	 *
 	 * Returns the docked size as a number.
 	 *
 	 * @return {number} Docked size.
 	 */
-	get _dockedSize(): number {
-		return parseFloat(this.dockedSize);
-	}
+	public readonly dockedSizeNumber = computed(() => parseFloat(this.dockedSize()));
 
 	/**
-	 * @internal
-	 *
-	 * Returns whether the drawer is over mode.
-	 *
-	 * @return {boolean} Drawer's mode is "over".
-	 */
-	get _isModeOver(): boolean {
-		return this.mode === 'over';
-	}
-
-	/**
-	 * @internal
-	 *
-	 * Returns whether the drawer is push mode.
-	 *
-	 * @return {boolean} Drawer's mode is "push".
-	 */
-	get _isModePush(): boolean {
-		return this.mode === 'push';
-	}
-
-	/**
-	 * @internal
-	 *
-	 * Returns whether the drawer is slide mode.
-	 *
-	 * @return {boolean} Drawer's mode is "slide".
-	 */
-	get _isModeSlide(): boolean {
-		return this.mode === 'slide';
-	}
-
-	/**
-	 * @internal
 	 *
 	 * Returns whether the drawer is "docked" -- i.e. it is closed but in dock mode.
 	 *
 	 * @return {boolean} Drawer is docked.
 	 */
-	get _isDocked(): boolean {
-		return this.dock && !!this.dockedSize && !this.opened;
-	}
+	public readonly isDocked = computed(() => this.dock() && !!this.dockedSize() && !this.opened());
 
 	/**
-	 * @internal
 	 *
 	 * Returns whether the drawer is positioned at the left or top.
 	 *
 	 * @return {boolean} Drawer is positioned at the left or top.
 	 */
-	get _isLeftOrTop(): boolean {
-		return this.position === 'left' || this.position === 'top';
-	}
+	public readonly isLeftOrTop = computed(() => this.position() === 'left' || this.position() === 'top');
 
 	/**
-	 * @internal
 	 *
 	 * Returns whether the drawer is positioned at the left or right.
 	 *
 	 * @return {boolean} Drawer is positioned at the left or right.
 	 */
-	get _isLeftOrRight(): boolean {
-		return this.position === 'left' || this.position === 'right';
-	}
+	public readonly isLeftOrRight = computed(() => this.position() === 'left' || this.position() === 'right');
 
 	/**
-	 * @internal
 	 *
 	 * Returns whether the drawer is inert -- i.e. the contents cannot be focused.
 	 *
 	 * @return {boolean} Drawer is inert.
 	 */
-	get _isInert(): boolean {
-		return !this.opened && !this.dock;
-	}
+	public readonly isInert = computed(() => !this.opened() && !this.dock());
+
+	/**
+	 *
+	 * Computes the transform styles for the drawer template.
+	 *
+	 * @return {CSSStyleDeclaration} The transform styles, with the WebKit-prefixed version as well.
+	 */
+	public readonly getStyle = computed(() => {
+		let transformStyle = '';
+		const opened = this.opened();
+
+		// Hides drawer off screen when closed
+		if (!opened) {
+			const transformDir: string = 'translate' + (this.isLeftOrRight() ? 'X' : 'Y');
+			const translateAmt = `${this.isLeftOrTop() ? '-' : ''}100%`;
+
+			transformStyle = `${transformDir}(${translateAmt})`;
+
+			// Docked mode: partially remains open
+			// Note that using `calc(...)` within `transform(...)` doesn't work in IE
+			if (this.dock() && this.dockedSizeNumber() > 0 && !(this.mode() === 'slide' && this.opened())) {
+				transformStyle += ` ${transformDir}(${this.isLeftOrTop() ? '+' : '-'}${this.dockedSize()})`;
+			}
+		}
+
+		return {
+			webkitTransform: transformStyle,
+			transform: transformStyle,
+		} as CSSStyleDeclaration;
+	});
 
 	constructor() {
-		if (!this._container) {
-			throw new Error('<drawer> must be inside a <drawer-container>.');
+		if (!this.container) {
+			throw new Error('<dp-drawer> must be inside a <dp-drawer-container>.');
 		}
-
-		this._isBrowser = isPlatformBrowser(this.platformId);
 
 		// Handle taps in iOS
-		if (this._isBrowser && isIOS() && !('onclick' in window)) {
-			this._clickEvent = 'touchstart';
+		if (this.isBrowser() && isIOS() && !('onclick' in window)) {
+			this.clickEvent.set('touchstart');
 		}
-
-		this._normalizePosition();
 
 		this.open = this.open.bind(this);
 		this.close = this.close.bind(this);
-		this._onTransitionEnd = this._onTransitionEnd.bind(this);
-		this._onFocusTrap = this._onFocusTrap.bind(this);
-		this._onClickOutside = this._onClickOutside.bind(this);
-		this._onKeyDown = this._onKeyDown.bind(this);
-		this._collapse = this._collapse.bind(this);
+		this.onTransitionEnd = this.onTransitionEnd.bind(this);
+		this.onFocusTrap = this.onFocusTrap.bind(this);
+		this.onClickOutside = this.onClickOutside.bind(this);
+		this.onKeyDown = this.onKeyDown.bind(this);
+		this.collapse = this.collapse.bind(this);
 	}
 
-	ngOnInit(): void {
-		if (!this._isBrowser) {
-			return;
+	public ngOnInit(): void {
+		if (!this.isBrowser()) return;
+
+		if (this.animate()) {
+			this.shouldAnimate.set(true);
+			this.animate.set(false);
 		}
 
-		if (this.animate) {
-			this._shouldAnimate = true;
-			this.animate = false;
-		}
+		this.container?.addDrawer(this);
 
-		this._container?._addDrawer(this);
-
-		if (this.autoCollapseOnInit) {
-			this._collapse();
+		if (this.autoCollapseOnInit()) {
+			this.collapse();
 		}
 	}
 
-	ngAfterContentInit(): void {
+	public ngAfterContentInit(): void {
 		this.contentInit.emit();
 	}
 
-	ngOnChanges(changes: SimpleChanges): void {
-		if (!this._isBrowser) {
-			return;
-		}
+	public ngOnChanges(changes: SimpleChanges): void {
+		if (!this.isBrowser()) return;
 
-		if (changes['animate'] && this._shouldAnimate) {
-			this._shouldAnimate = changes['animate'].currentValue;
+		if (changes['animate'] && this.shouldAnimate()) {
+			this.shouldAnimate.set(changes['animate'].currentValue);
 		}
 
 		if (changes['closeOnClickOutside']) {
 			if (changes['closeOnClickOutside'].currentValue) {
-				this._initCloseClickListener();
+				this.initCloseClickListener();
 			} else {
-				this._destroyCloseClickListener();
+				this.destroyCloseClickListener();
 			}
 		}
 		if (changes['keyClose']) {
 			if (changes['keyClose'].currentValue) {
-				this._initCloseKeyDownListener();
+				this.initCloseKeyDownListener();
 			} else {
-				this._destroyCloseKeyDownListener();
+				this.destroyCloseKeyDownListener();
 			}
 		}
 
 		if (changes['position']) {
 			// Handle "start" and "end" aliases
-			this._normalizePosition();
+			this.normalizePosition();
 
 			// Emit change in timeout to allow for position change to be rendered first
 			setTimeout(() => {
@@ -376,9 +302,9 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 		}
 
 		if (changes['opened']) {
-			if (this._shouldAnimate) {
-				this.animate = true;
-				this._shouldAnimate = false;
+			if (this.shouldAnimate()) {
+				this.animate.set(true);
+				this.shouldAnimate.set(false);
 			}
 
 			if (changes['opened'].currentValue) {
@@ -389,19 +315,52 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 		}
 
 		if (changes['autoCollapseHeight'] || changes['autoCollapseWidth']) {
-			this._initCollapseListeners();
+			this.initCollapseListeners();
 		}
 	}
 
-	ngOnDestroy(): void {
-		if (!this._isBrowser) {
-			return;
+	public ngOnDestroy(): void {
+		if (!this.isBrowser()) return;
+
+		this.destroyCloseListeners();
+		this.destroyCollapseListeners();
+
+		this.container?.removeDrawer(this);
+	}
+
+	/**
+	 *
+	 * Returns the rendered width of the drawer (or the docked size).
+	 * This is used in the drawer container.
+	 *
+	 * @return {number} Width of drawer.
+	 */
+
+	public getWidth(): number {
+		const element = this.drawer();
+
+		if (element?.nativeElement) {
+			return this.isDocked() ? this.dockedSizeNumber() : element.nativeElement.offsetWidth;
 		}
 
-		this._destroyCloseListeners();
-		this._destroyCollapseListeners();
+		return 0;
+	}
 
-		this._container?._removeDrawer(this);
+	/**
+	 *
+	 * Returns the rendered height of the drawer (or the docked size).
+	 * This is used in the drawer container.
+	 *
+	 * @return {number} Height of drawer.
+	 */
+
+	public getHeight(): number {
+		const element = this.drawer();
+		if (element?.nativeElement) {
+			return this.isDocked() ? this.dockedSizeNumber() : element.nativeElement.offsetHeight;
+		}
+
+		return 0;
 	}
 
 	// Drawer toggling
@@ -410,26 +369,22 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	/**
 	 * Opens the drawer and emits the appropriate events.
 	 */
-	open(): void {
-		if (!this._isBrowser) {
-			return;
-		}
+	public open(): void {
+		if (!this.isBrowser()) return;
 
-		this.opened = true;
+		this.opened.set(true);
 		this.openedChange.emit(true);
 
 		this.openStart.emit();
 
-		this._ref.detectChanges();
-
 		setTimeout(() => {
-			if (this.animate && !this._isModeSlide) {
-				this._elDrawer.nativeElement.addEventListener('transitionend', this._onTransitionEnd);
+			if (this.animate() && this.mode() !== 'slide') {
+				this.drawer()?.nativeElement.addEventListener('transitionend', this.onTransitionEnd);
 			} else {
-				this._setFocused();
-				this._initCloseListeners();
+				this.setFocused();
+				this.initCloseListeners();
 
-				if (this.opened) {
+				if (this.opened()) {
 					this.openEnd.emit();
 				}
 			}
@@ -439,26 +394,22 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	/**
 	 * Closes the drawer and emits the appropriate events.
 	 */
-	close(): void {
-		if (!this._isBrowser) {
-			return;
-		}
+	public close(): void {
+		if (!this.isBrowser()) return;
 
-		this.opened = false;
+		this.opened.set(false);
 		this.openedChange.emit(false);
 
 		this.closeStart.emit();
 
-		this._ref.detectChanges();
-
 		setTimeout(() => {
-			if (this.animate && !this._isModeSlide) {
-				this._elDrawer.nativeElement.addEventListener('transitionend', this._onTransitionEnd);
+			if (this.animate() && this.mode() !== 'slide') {
+				this.drawer()?.nativeElement.addEventListener('transitionend', this.onTransitionEnd);
 			} else {
-				this._setFocused();
-				this._destroyCloseListeners();
+				this.setFocused();
+				this.destroyCloseListeners();
 
-				if (!this.opened) {
+				if (!this.opened()) {
 					this.closeEnd.emit();
 				}
 			}
@@ -468,85 +419,54 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	/**
 	 * Manually trigger a re-render of the container. Useful if the drawer contents might change.
 	 */
-	triggerRerender(): void {
-		if (!this._isBrowser) {
-			return;
-		}
+	private triggerRerender(): void {
+		if (!this.isBrowser()) return;
 
 		setTimeout(() => {
-			this._onRerender.emit();
+			this.drawerRerendered.emit();
 		});
 	}
 
 	/**
-	 * @internal
-	 *
-	 * Computes the transform styles for the drawer template.
-	 *
-	 * @return {CSSStyleDeclaration} The transform styles, with the WebKit-prefixed version as well.
-	 */
-	_getStyle(): CSSStyleDeclaration {
-		let transformStyle = '';
-
-		// Hides drawer off screen when closed
-		if (!this.opened) {
-			const transformDir: string = 'translate' + (this._isLeftOrRight ? 'X' : 'Y');
-			const translateAmt = `${this._isLeftOrTop ? '-' : ''}100%`;
-
-			transformStyle = `${transformDir}(${translateAmt})`;
-
-			// Docked mode: partially remains open
-			// Note that using `calc(...)` within `transform(...)` doesn't work in IE
-			if (this.dock && this._dockedSize > 0 && !(this._isModeSlide && this.opened)) {
-				transformStyle += ` ${transformDir}(${this._isLeftOrTop ? '+' : '-'}${this.dockedSize})`;
-			}
-		}
-
-		return {
-			webkitTransform: transformStyle,
-			transform: transformStyle,
-		} as CSSStyleDeclaration;
-	}
-
-	/**
-	 * @internal
 	 *
 	 * Handles the `transitionend` event on the drawer to emit the openEnd/closeEnd events after the transform
 	 * transition is completed.
 	 */
-	_onTransitionEnd(e: TransitionEvent): void {
-		if (e.target === this._elDrawer.nativeElement && e.propertyName.endsWith('transform')) {
-			this._setFocused();
+	private onTransitionEnd(event: TransitionEvent): void {
+		if (event.target === this.drawer()?.nativeElement && event.propertyName.endsWith('transform')) {
+			this.setFocused();
 
-			if (this.opened) {
-				this._initCloseListeners();
+			if (this.opened()) {
+				this.initCloseListeners();
 				this.openEnd.emit();
 			} else {
-				this._destroyCloseListeners();
+				this.destroyCloseListeners();
 				this.closeEnd.emit();
 			}
 
 			this.transitionEnd.emit();
 
-			this._elDrawer.nativeElement.removeEventListener('transitionend', this._onTransitionEnd);
+			this.drawer()?.nativeElement.removeEventListener('transitionend', this.onTransitionEnd);
 		}
 	}
 
 	/**
 	 * Sets focus to the first focusable element inside the drawer.
 	 */
-	private _focusFirstItem(): void {
-		if (this._focusableElements && this._focusableElements.length > 0) {
-			this._focusableElements[0].focus();
+	private focusFirstItem(): void {
+		if (this.focusableElements().length > 0) {
+			this.focusableElements()[0].focus();
 		}
 	}
 
 	/**
 	 * Loops focus back to the start of the drawer if set to do so.
 	 */
-	private _onFocusTrap(e: FocusEvent): void {
-		if (this._shouldTrapFocus && !this._elDrawer.nativeElement.contains(e.target)) {
-			this._focusFirstItem();
+	private onFocusTrap(event: FocusEvent): void {
+		const element = this.drawer();
+		const shouldTrapFocus = this.opened() && this.trapFocus();
+		if (shouldTrapFocus && element && event.target instanceof HTMLElement && !element.nativeElement.contains(event.target)) {
+			this.focusFirstItem();
 		}
 	}
 
@@ -554,48 +474,54 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	 * Handles the ability to focus drawer elements when it's open/closed to ensure that the drawer is inert when
 	 * appropriate.
 	 */
-	private _setFocused(): void {
-		this._focusableElements = Array.from(this._elDrawer.nativeElement.querySelectorAll(this._focusableElementsString)) as Array<HTMLElement>;
+	private setFocused(): void {
+		const element = this.drawer();
 
-		if (this.opened) {
-			this._focusedBeforeOpen = document.activeElement as HTMLElement;
+		if (!element) return;
+
+		this.focusableElements.set(Array.from(element.nativeElement.querySelectorAll(this.focusableElementsString())) as HTMLElement[]);
+
+		if (this.opened()) {
+			this.focusedBeforeOpen.set(document.activeElement as HTMLElement);
 
 			// Restore focusability, with previous tabindex attributes
-			for (const el of this._focusableElements) {
-				const prevTabIndex = el.getAttribute(this._tabIndexAttr);
-				const wasTabIndexSet = el.getAttribute(this._tabIndexIndicatorAttr) !== null;
+			for (const el of this.focusableElements()) {
+				const prevTabIndex = el.getAttribute(this.tabIndexAttr());
+				const wasTabIndexSet = el.getAttribute(this.tabIndexIndicatorAttr()) !== null;
 				if (prevTabIndex !== null) {
 					el.setAttribute('tabindex', prevTabIndex);
-					el.removeAttribute(this._tabIndexAttr);
+					el.removeAttribute(this.tabIndexAttr());
 				} else if (wasTabIndexSet) {
 					el.removeAttribute('tabindex');
-					el.removeAttribute(this._tabIndexIndicatorAttr);
+					el.removeAttribute(this.tabIndexIndicatorAttr());
 				}
 			}
 
-			if (this.autoFocus) {
-				this._focusFirstItem();
+			if (this.autoFocus()) {
+				this.focusFirstItem();
 			}
 
-			document.addEventListener('focus', this._onFocusTrap, true);
+			document.addEventListener('focus', this.onFocusTrap, true);
 		} else {
 			// Manually make all focusable elements unfocusable, saving existing tabindex attributes
-			for (const el of this._focusableElements) {
+			for (const el of this.focusableElements()) {
 				const existingTabIndex = el.getAttribute('tabindex');
 				el.setAttribute('tabindex', '-1');
-				el.setAttribute(this._tabIndexIndicatorAttr, '');
+				el.setAttribute(this.tabIndexIndicatorAttr(), '');
 
 				if (existingTabIndex !== null) {
-					el.setAttribute(this._tabIndexAttr, existingTabIndex);
+					el.setAttribute(this.tabIndexAttr(), existingTabIndex);
 				}
 			}
 
-			document.removeEventListener('focus', this._onFocusTrap, true);
+			document.removeEventListener('focus', this.onFocusTrap, true);
+
+			const focusedBeforeOpen = this.focusedBeforeOpen();
 
 			// Set focus back to element before the drawer was opened
-			if (this._focusedBeforeOpen && this.autoFocus && this._isModeOver) {
-				this._focusedBeforeOpen.focus();
-				(this._focusedBeforeOpen as any) = null;
+			if (focusedBeforeOpen && this.autoFocus() && this.mode() === 'over') {
+				focusedBeforeOpen.focus();
+				this.focusedBeforeOpen.set(null);
 			}
 		}
 	}
@@ -606,27 +532,27 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	/**
 	 * Initializes event handlers for the closeOnClickOutside and keyClose options.
 	 */
-	private _initCloseListeners(): void {
-		this._initCloseClickListener();
-		this._initCloseKeyDownListener();
+	private initCloseListeners(): void {
+		this.initCloseClickListener();
+		this.initCloseKeyDownListener();
 	}
 
-	private _initCloseClickListener(): void {
+	private initCloseClickListener(): void {
 		// In a timeout so that things render first
 		setTimeout(() => {
-			if (this.opened && this.closeOnClickOutside && !this._onClickOutsideAttached) {
-				document.addEventListener(this._clickEvent as keyof DocumentEventMap, this._onClickOutside as any);
-				this._onClickOutsideAttached = true;
+			if (this.opened() && this.closeOnClickOutside() && !this.onClickOutsideAttached()) {
+				document.addEventListener(this.clickEvent() as keyof DocumentEventMap, this.onClickOutside);
+				this.onClickOutsideAttached.set(true);
 			}
 		});
 	}
 
-	private _initCloseKeyDownListener(): void {
+	private initCloseKeyDownListener(): void {
 		// In a timeout so that things render first
 		setTimeout(() => {
-			if (this.opened && this.keyClose && !this._onKeyDownAttached) {
-				document.addEventListener('keydown', this._onKeyDown);
-				this._onKeyDownAttached = true;
+			if (this.opened() && this.keyClose() && !this.onKeyDownAttached()) {
+				document.addEventListener('keydown', this.onKeyDown);
+				this.onKeyDownAttached.set(true);
 			}
 		});
 	}
@@ -634,22 +560,22 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	/**
 	 * Destroys all event handlers from _initCloseListeners.
 	 */
-	private _destroyCloseListeners(): void {
-		this._destroyCloseClickListener();
-		this._destroyCloseKeyDownListener();
+	private destroyCloseListeners(): void {
+		this.destroyCloseClickListener();
+		this.destroyCloseKeyDownListener();
 	}
 
-	private _destroyCloseClickListener(): void {
-		if (this._onClickOutsideAttached) {
-			document.removeEventListener(this._clickEvent as keyof DocumentEventMap, this._onClickOutside as any);
-			this._onClickOutsideAttached = false;
+	private destroyCloseClickListener(): void {
+		if (this.onClickOutsideAttached()) {
+			document.removeEventListener(this.clickEvent() as keyof DocumentEventMap, this.onClickOutside);
+			this.onClickOutsideAttached.set(false);
 		}
 	}
 
-	private _destroyCloseKeyDownListener(): void {
-		if (this._onKeyDownAttached) {
-			document.removeEventListener('keydown', this._onKeyDown);
-			this._onKeyDownAttached = false;
+	private destroyCloseKeyDownListener(): void {
+		if (this.onKeyDownAttached()) {
+			document.removeEventListener('keydown', this.onKeyDown);
+			this.onKeyDownAttached.set(false);
 		}
 	}
 
@@ -657,10 +583,12 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	 * Handles `click` events on anything while the drawer is open for the closeOnClickOutside option.
 	 * Programatically closes the drawer if a click occurs outside the drawer.
 	 *
-	 * @param e {MouseEvent} Mouse click event.
+	 * @param event {MouseEvent} Mouse click event.
 	 */
-	private _onClickOutside(e: MouseEvent): void {
-		if (this._onClickOutsideAttached && this._elDrawer && !this._elDrawer.nativeElement.contains(e.target)) {
+	private onClickOutside(event: Event): void {
+		const mouseEvent = event as MouseEvent;
+		const element = this.drawer();
+		if (this.onClickOutsideAttached() && element && mouseEvent.target instanceof HTMLElement && !element.nativeElement.contains(mouseEvent.target)) {
 			this.close();
 		}
 	}
@@ -668,12 +596,10 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	/**
 	 * Handles the `keydown` event for the keyClose option.
 	 *
-	 * @param e {KeyboardEvent} Normalized keydown event.
+	 * @param event {KeyboardEvent} Normalized keydown event.
 	 */
-	private _onKeyDown(e: KeyboardEvent | Event): void {
-		e = e || window.event;
-
-		if ((e as KeyboardEvent).keyCode === this.keyCode) {
+	private onKeyDown(event: KeyboardEvent | Event): void {
+		if ((event as KeyboardEvent).code === this.keyCode()) {
 			this.close();
 		}
 	}
@@ -681,46 +607,46 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	// Auto collapse handlers
 	// ==============================================================================================
 
-	private _initCollapseListeners(): void {
-		if (this.autoCollapseHeight || this.autoCollapseWidth) {
+	private initCollapseListeners(): void {
+		if (this.autoCollapseHeight() || this.autoCollapseWidth()) {
 			// In a timeout so that things render first
 			setTimeout(() => {
-				if (!this._onResizeAttached) {
-					window.addEventListener('resize', this._collapse);
-					this._onResizeAttached = true;
+				if (!this.onResizeAttached()) {
+					window.addEventListener('resize', this.collapse);
+					this.onResizeAttached.set(true);
 				}
 			});
 		}
 	}
 
-	private _destroyCollapseListeners(): void {
-		if (this._onResizeAttached) {
-			window.removeEventListener('resize', this._collapse);
-			this._onResizeAttached = false;
+	private destroyCollapseListeners(): void {
+		if (this.onResizeAttached()) {
+			window.removeEventListener('resize', this.collapse);
+			this.onResizeAttached.set(false);
 		}
 	}
 
-	private _collapse(): void {
+	private collapse(): void {
 		const winHeight: number = window.innerHeight;
 		const winWidth: number = window.innerWidth;
 
-		if (this.autoCollapseHeight) {
-			if (winHeight <= this.autoCollapseHeight && this.opened) {
-				this._wasCollapsed = true;
+		if (this.autoCollapseHeight()) {
+			if (winHeight <= this.autoCollapseHeight() && this.opened()) {
+				this.wasCollapsed.set(true);
 				this.close();
-			} else if (winHeight > this.autoCollapseHeight && this._wasCollapsed) {
+			} else if (winHeight > this.autoCollapseHeight() && this.wasCollapsed()) {
 				this.open();
-				this._wasCollapsed = false;
+				this.wasCollapsed.set(false);
 			}
 		}
 
-		if (this.autoCollapseWidth) {
-			if (winWidth <= this.autoCollapseWidth && this.opened) {
-				this._wasCollapsed = true;
+		if (this.autoCollapseWidth()) {
+			if (winWidth <= this.autoCollapseWidth() && this.opened()) {
+				this.wasCollapsed.set(true);
 				this.close();
-			} else if (winWidth > this.autoCollapseWidth && this._wasCollapsed) {
+			} else if (winWidth > this.autoCollapseWidth() && this.wasCollapsed()) {
 				this.open();
-				this._wasCollapsed = false;
+				this.wasCollapsed.set(false);
 			}
 		}
 	}
@@ -728,13 +654,13 @@ export class DrawerComponent implements AfterContentInit, OnInit, OnChanges, OnD
 	/**
 	 * "Normalizes" position. For example, "start" would be "left" if the page is LTR.
 	 */
-	private _normalizePosition(): void {
+	private normalizePosition(): void {
 		const ltr: boolean = isLTR();
 
-		if (this.position === 'start') {
-			this.position = ltr ? 'left' : 'right';
-		} else if (this.position === 'end') {
-			this.position = ltr ? 'right' : 'left';
+		if (this.position() === 'start') {
+			this.position.set(ltr ? 'left' : 'right');
+		} else if (this.position() === 'end') {
+			this.position.set(ltr ? 'right' : 'left');
 		}
 	}
 }

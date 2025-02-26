@@ -1,21 +1,21 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { TuiButton, TuiDialogContext, TuiTextfield } from '@taiga-ui/core';
+import { TuiButton, TuiDialogContext, TuiError, TuiTextfield } from '@taiga-ui/core';
 
 import { TuiSelectModule, TuiTextfieldControllerModule, TuiInputDateTimeModule, TuiComboBoxModule } from '@taiga-ui/legacy';
 
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { TuiAutoFocus, TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { TuiDataListWrapper, TuiFilterByInputPipe, TuiStringifyContentPipe } from '@taiga-ui/kit';
 import { IRecordForm } from '../../models/record-form.model';
-import { NativeDatetimeTransformerDirective } from '../../../../shared/directives';
+import { RecordService } from '../../../../shared/services';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { IRecord, SPECIALTIES, Specialty } from '../../../../shared/models';
+import { idExitsValidator } from './id-exists.validator';
 
 const angularImports = [ReactiveFormsModule, NgTemplateOutlet];
-const firstPartyImports = [NativeDatetimeTransformerDirective];
 const thirdPartyImports = [TranslocoDirective];
 const taigaUiImports = [
 	TuiButton,
@@ -28,17 +28,21 @@ const taigaUiImports = [
 	TuiStringifyContentPipe,
 	TuiComboBoxModule,
 	TuiAutoFocus,
+	TuiError,
 ];
 
 @Component({
 	selector: 'dp-record-form',
-	imports: [...angularImports, ...firstPartyImports, ...thirdPartyImports, ...taigaUiImports],
+	imports: [...angularImports, ...thirdPartyImports, ...taigaUiImports],
 	template: `
-		<form class="flex flex-col space-y-2" [formGroup]="form" *transloco="let transloco">
+		<form class="flex flex-col gap-2" [formGroup]="form" *transloco="let transloco">
 			<div class="w-full">
 				<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'id', type: 'text', autoFocus: true }" />
+				@if (form.controls.id.hasError('idExists')) {
+					<tui-error [error]="transloco('validation.idExists')" />
+				}
 			</div>
-			<div class="flex space-x-2">
+			<div class="flex gap-2">
 				<div class="w-1/2">
 					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'arrival', type: 'datetime' }" />
 				</div>
@@ -46,7 +50,7 @@ const taigaUiImports = [
 					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'leaving', type: 'datetime' }" />
 				</div>
 			</div>
-			<div class="flex space-x-2">
+			<div class="flex gap-2">
 				<div class="w-1/2">
 					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'from', type: 'text' }" />
 				</div>
@@ -57,7 +61,7 @@ const taigaUiImports = [
 
 			<ng-container *ngTemplateOutlet="dropdownTemplate; context: { formControlName: 'specialty', array: specialties() }" />
 
-			<button tuiButton class="w-full" type="button" size="m" (click)="save()">
+			<button tuiButton class="w-full" type="button" size="m" [disabled]="form.invalid" (click)="save()">
 				<span class="mr-2 font-normal">{{ transloco('general.save') }}</span>
 			</button>
 
@@ -67,7 +71,6 @@ const taigaUiImports = [
 					@switch (type) {
 						@case ('datetime') {
 							<tui-input-date-time
-								toNativeDatetime
 								[tuiAutoFocus]="autoFocus ?? false"
 								[formControlName]="formControlName"
 								[min]="formControlName === 'arrival' ? null : minDate()"
@@ -101,6 +104,8 @@ const taigaUiImports = [
 		</form>
 	`,
 	styles: `
+		@reference '../../../../../styles.css';
+
 		:host {
 			@apply block;
 		}
@@ -109,36 +114,41 @@ const taigaUiImports = [
 })
 export class RecordFormComponent {
 	private readonly translocoService = inject(TranslocoService);
+	private readonly recordsService = inject(RecordService);
 
 	public readonly context = inject<TuiDialogContext<IRecord, IRecord | null>>(POLYMORPHEUS_CONTEXT);
 	public readonly specialties = signal(SPECIALTIES);
 
 	public readonly form = new FormGroup<IRecordForm>({
 		uuid: new FormControl<string | null>(this.context.data?.uuid ?? null),
-		id: new FormControl<string>(this.context.data?.id ?? '', { nonNullable: true }),
-		arrival: new FormControl<Date>(this.context.data?.arrival ?? new Date(), { nonNullable: true }),
-		leaving: new FormControl<Date>(this.context.data?.leaving ?? new Date(), { nonNullable: true }),
+		id: new FormControl<string>(this.context.data?.id ?? '', {
+			nonNullable: true,
+			validators: [Validators.required],
+			asyncValidators: this.context.data?.id ? [] : [idExitsValidator(this.recordsService)],
+			updateOn: 'blur',
+		}),
+		arrival: new FormControl<[TuiDay, TuiTime]>(this.getTuiDayTime(this.context.data?.arrival ?? new Date()), {
+			nonNullable: true,
+		}),
+		leaving: new FormControl<[TuiDay, TuiTime] | null>(this.context.data?.leaving ? this.getTuiDayTime(this.context.data.arrival) : null),
 		from: new FormControl<string>(this.context.data?.from ?? '', { nonNullable: true }),
 		to: new FormControl<string>(this.context.data?.to ?? '', { nonNullable: true }),
 		specialty: new FormControl<Specialty>(this.context.data?.specialty ?? 'internal', { nonNullable: true }),
 	});
 
-	public readonly arrivalChange = toSignal(this.form.controls.arrival.valueChanges, { initialValue: this.form.controls.arrival.value });
-
-	public readonly minDate = computed(
-		() =>
-			[
-				new TuiDay(this.arrivalChange().getFullYear(), this.arrivalChange().getMonth(), this.arrivalChange().getDate()),
-				new TuiTime(this.arrivalChange().getHours(), this.arrivalChange().getMinutes(), this.arrivalChange().getSeconds()),
-			] satisfies [TuiDay, TuiTime],
-	);
+	public readonly minDate = toSignal(this.form.controls.arrival.valueChanges.pipe(), { initialValue: this.form.controls.arrival.value });
 
 	public save(): void {
 		const value = this.form.getRawValue();
 		const uuid = value.uuid;
+		const arrival = this.toNativeDateTime(value.arrival[0], value.arrival[1]);
+		const leaving = value.leaving ? this.toNativeDateTime(value.leaving[0], value.leaving[1]) : undefined;
+
 		const record: IRecord = {
 			...this.form.getRawValue(),
 			uuid: uuid ?? undefined,
+			arrival,
+			leaving,
 		};
 		this.context.completeWith(record);
 	}
@@ -154,4 +164,20 @@ export class RecordFormComponent {
 	}
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate('specialty.' + item);
+
+	private getTuiDayTime(date: Date): [TuiDay, TuiTime] {
+		return [this.getTuiDay(date), this.getTuiTime(date)];
+	}
+
+	private getTuiDay(date: Date): TuiDay {
+		return new TuiDay(date.getFullYear(), date.getMonth(), date.getDate());
+	}
+
+	private getTuiTime(date: Date): TuiTime {
+		return new TuiTime(date.getHours(), date.getMinutes(), date.getSeconds());
+	}
+
+	private toNativeDateTime(day: TuiDay, time: TuiTime): Date {
+		return new Date(day.year ?? 0, day.month ?? 0, day.day ?? 0, time.hours, time.minutes, time.seconds);
+	}
 }

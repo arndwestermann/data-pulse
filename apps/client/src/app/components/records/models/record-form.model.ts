@@ -1,11 +1,12 @@
 import { FormControl } from '@angular/forms';
 import { Specialty } from '../../../shared/models';
+import { TuiDay, TuiTime } from '@taiga-ui/cdk';
 
 export interface IRecordForm {
 	uuid: FormControl<string | null>;
 	id: FormControl<string>;
-	arrival: FormControl<Date>;
-	leaving: FormControl<Date>;
+	arrival: FormControl<[TuiDay, TuiTime]>;
+	leaving: FormControl<[TuiDay, TuiTime] | null>;
 	from: FormControl<string>;
 	to: FormControl<string>;
 	specialty: FormControl<Specialty>;

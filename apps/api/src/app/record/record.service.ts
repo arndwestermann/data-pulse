@@ -23,7 +23,7 @@ export class RecordService {
 				const record = new Record();
 				record.id = createRecordDto.id;
 				record.arrival = createRecordDto.arrival;
-				record.leaving = createRecordDto.leaving;
+				record.leaving = createRecordDto.leaving ?? null;
 				record.from = createRecordDto.from;
 				record.to = createRecordDto.to;
 				record.specialty = createRecordDto.specialty;
@@ -78,9 +78,9 @@ export class RecordService {
 			switchMap((record) => {
 				if (!record) return of(null);
 
+				record.leaving = updateRecordDto.leaving ?? null;
 				if (updateRecordDto.id) record.id = updateRecordDto.id;
 				if (updateRecordDto.arrival) record.arrival = updateRecordDto.arrival;
-				if (updateRecordDto.leaving) record.leaving = updateRecordDto.leaving;
 				if (updateRecordDto.from) record.from = updateRecordDto.from;
 				if (updateRecordDto.to) record.to = updateRecordDto.to;
 				if (updateRecordDto.specialty) record.specialty = updateRecordDto.specialty;

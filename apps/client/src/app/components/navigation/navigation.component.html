@@ -26,7 +26,14 @@
 	</div>
 </header>
 <dp-drawer-container>
-	<dp-drawer drawer [opened]="isDrawerOpen()" mode="push" position="left" [dock]="true" dockedSize="60px" drawerClass="w-60 flex flex-col">
+	<dp-drawer
+		drawer
+		[opened]="isDrawerOpen()"
+		mode="push"
+		position="left"
+		[dock]="!isXSmall()"
+		dockedSize="60px"
+		drawerClass="w-30 md:w-60 flex flex-col">
 		<nav class="grow flex flex-col gap-2 w-full h-full text-base border-r-2 border-gray-100" *transloco="let transloco; prefix: 'routes'">
 			@for (route of routes(); track $index) {
 				<div
@@ -41,7 +48,7 @@
 						<a
 							[@nav-animation-text]="isDrawerOpen() ? 'opened' : 'closed'"
 							*transloco="let transloco; prefix: 'routes'"
-							class="ml-2 flex rounded w-full">
+							class="ml-2 flex rounded-sm w-full">
 							{{ transloco(route.data?.['translationKey']) }}
 						</a>
 					}

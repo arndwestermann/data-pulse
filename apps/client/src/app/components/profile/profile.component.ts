@@ -12,7 +12,7 @@ import { TuiPassword } from '@taiga-ui/kit';
 	selector: 'dp-profile',
 	imports: [ReactiveFormsModule, TuiTextfield, TuiButton, TuiIcon, TuiPassword, TuiError, TranslocoDirective],
 	template: `
-		<form [formGroup]="profile()" class="flex flex-col w-1/2 gap-2" *transloco="let transloco">
+		<form [formGroup]="profile()" class="flex flex-col w-full md:w-1/2 gap-2" *transloco="let transloco">
 			<div class="flex flex-col">
 				<tui-textfield>
 					<input tuiTextfield formControlName="username" [placeholder]="transloco('profile.username')" (keypress)="onKeyPress($event)" />
@@ -29,8 +29,8 @@ import { TuiPassword } from '@taiga-ui/kit';
 				@let emailRequiredError = profile().controls.email.hasError('required');
 				<tui-error [error]="emailRequiredError ? transloco('validation.required', { field: transloco('profile.email') }) : null" />
 			</div>
-			<div class="flex space-x-2">
-				<div class="w-1/2 flex flex-col">
+			<div class="flex flex-col md:flex-row gap-2">
+				<div class="w-full md:w-1/2 flex flex-col">
 					<tui-textfield>
 						<input
 							tuiTextfield
@@ -46,7 +46,7 @@ import { TuiPassword } from '@taiga-ui/kit';
 					<tui-error [error]="minLengthError ? transloco('validation.minLength') : null" />
 					<tui-error [error]="patternError ? transloco('validation.pattern') : null" />
 				</div>
-				<div class="w-1/2 flex flex-col space-y-2">
+				<div class="w-full md:w-1/2 flex flex-col gap-2">
 					<tui-textfield>
 						<input
 							tuiTextfield
@@ -64,8 +64,10 @@ import { TuiPassword } from '@taiga-ui/kit';
 		</form>
 	`,
 	styles: `
+		@reference '../../../styles.css';
+
 		:host {
-			@apply h-full w-full flex justify-center items-center;
+			@apply h-full w-full p-2 flex justify-center items-center;
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,

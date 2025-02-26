@@ -25,8 +25,10 @@ import { IHeatmapDetailDialogContext } from '../../models/heatmap-detail-dialog.
 		}
 	`,
 	styles: `
+		@reference '../../../../../styles.css';
+
 		:host {
-			@apply flex flex-col space-y-6 overflow-y-auto p-2 px-4 h-[600px];
+			@apply flex flex-col gap-6 overflow-y-auto p-2 px-4 h-[600px];
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,

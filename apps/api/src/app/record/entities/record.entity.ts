@@ -12,8 +12,8 @@ export class Record {
 	@Column('datetime')
 	arrival!: Date;
 
-	@Column('datetime')
-	leaving!: Date;
+	@Column('datetime', { nullable: true })
+	leaving!: Date | null;
 
 	@Column()
 	from!: string;

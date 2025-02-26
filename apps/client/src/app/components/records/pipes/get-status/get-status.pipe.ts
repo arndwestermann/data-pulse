@@ -7,6 +7,8 @@ import { getStatus } from '../../../../shared/utils';
 })
 export class GetStatusPipe implements PipeTransform {
 	transform(record: IRecord): Status | null {
+		if (!record.leaving) return null;
+
 		return getStatus(record.leaving, record.arrival);
 	}
 }

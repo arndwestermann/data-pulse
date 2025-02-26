@@ -36,8 +36,8 @@ interface IHeatmapSeries<T> {
 	template: `
 		<ng-container *transloco="let transloco">
 			<div class="flex flex-col justify-center h-full grow overflow-y-auto overflow-x-hidden">
-				<div class="flex space-x-2 items-center" data-html2canvas-ignore>
-					<tui-input-date-range toNativeDate [(ngModel)]="dateRange" class="w-64">
+				<div class="flex gap-2 items-center" data-html2canvas-ignore>
+					<tui-input-date-range [(ngModel)]="dateRange" class="w-64">
 						{{ transloco('heatmap.chooseRange') }}
 						<input placeholder="From - To" tuiTextfieldLegacy />
 					</tui-input-date-range>
@@ -58,14 +58,14 @@ interface IHeatmapSeries<T> {
 						[animations]="false"
 						[results]="chart()"
 						(select)="openDialog($event)" />
-					<!-- 
+					<!--
 						(activate)="onActivate($event)"
 						(deactivate)="onDeactivate($event)" -->
 				</div>
 			</div>
 
-			<div class="flex flex-col shrink-0 space-y-2 items-center justify-center">
-				<div class="flex flex-col items-center space-y-2">
+			<div class="flex flex-col shrink-0 gap-2 items-center justify-center">
+				<div class="flex flex-col items-center gap-2">
 					<span class="font-bold">{{ transloco('heatmap.specialty') }}</span>
 					<div class="flex flex-col">
 						@for (specialty of groupedBySpecialty(); track $index) {
@@ -89,8 +89,10 @@ interface IHeatmapSeries<T> {
 		</ng-container>
 	`,
 	styles: `
+		@reference '../../../styles.css';
+
 		:host {
-			@apply flex space-x-2 justify-center items-center p-2 h-full;
+			@apply flex gap-2 justify-center items-center p-2 h-full;
 			box-shadow: unset !important;
 		}
 	`,
@@ -137,7 +139,10 @@ export class HeatMapComponent {
 	);
 
 	public readonly discharge = computed(() =>
-		this.heatMap().map((heatMapItem) => ({ key: heatMapItem.key, value: this.data().filter((item) => isSameDay(item.leaving, heatMapItem.key)) })),
+		this.heatMap().map((heatMapItem) => ({
+			key: heatMapItem.key,
+			value: this.data().filter((item) => item.leaving && isSameDay(item.leaving, heatMapItem.key)),
+		})),
 	);
 
 	public readonly chart = computed(() => {

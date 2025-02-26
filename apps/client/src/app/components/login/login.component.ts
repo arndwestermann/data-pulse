@@ -12,7 +12,7 @@ import { map, merge } from 'rxjs';
 	imports: [ReactiveFormsModule, TuiTextfield, TuiButton, TuiButtonLoading, TuiIcon, TuiPassword, TuiError, TranslocoDirective],
 	template: `
 		<ng-container *transloco="let transloco" [formGroup]="credentials">
-			<tui-textfield class="w-1/3">
+			<tui-textfield class="w-full md:w-1/3">
 				<input
 					tuiTextfield
 					formControlName="username"
@@ -26,7 +26,7 @@ import { map, merge } from 'rxjs';
 						? transloco('validation.required', { field: transloco('profile.username') })
 						: null
 				" />
-			<tui-textfield class="w-1/3">
+			<tui-textfield class="w-full md:w-1/3">
 				<input
 					tuiTextfield
 					formControlName="password"
@@ -53,8 +53,10 @@ import { map, merge } from 'rxjs';
 		</ng-container>
 	`,
 	styles: `
+		@reference '../../../styles.css';
+
 		:host {
-			@apply flex flex-col items-center justify-center gap-2 h-full;
+			@apply flex flex-col items-center justify-center gap-2 p-2 h-full;
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,

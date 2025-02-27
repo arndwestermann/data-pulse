@@ -26,8 +26,8 @@ import { DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
-import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, SPECIALTIES, Specialty, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY } from '../../shared/models';
-import { fromCache, parseCSV, uuid as getUUID, filterNullish } from '../../shared/utils';
+import { IRecord, SPECIALTIES, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY } from '../../shared/models';
+import { fromCache } from '../../shared/utils';
 
 import { combineLatest, debounceTime, filter, map, of, Subject, switchMap, take, tap } from 'rxjs';
 

@@ -6,8 +6,10 @@ import {
 	EMPTY,
 	expand,
 	filter,
+	finalize,
 	forkJoin,
 	from,
+	fromEvent,
 	map,
 	merge,
 	Observable,
@@ -17,8 +19,9 @@ import {
 	startWith,
 	Subject,
 	switchMap,
+	tap,
 } from 'rxjs';
-import { IRecord, IRecordDto, NEVER_ASK_DELETE_AGAIN_STORAGE_KEY, TCrud } from '../../models';
+import { IRecord, IRecordDto, IWorker, NEVER_ASK_DELETE_AGAIN_STORAGE_KEY, TCrud } from '../../models';
 import { mapDtoToRecord, mapRecordToDto } from '../../utils';
 import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -32,9 +35,10 @@ export class RecordService {
 	private readonly dialogService = inject(TuiDialogService);
 	private readonly cacheService = inject(CacheService);
 
+	private readonly worker = new Worker(new URL('./csv.worker', import.meta.url));
+
 	private readonly createOrUpdateRecordSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord | null }>();
 	private readonly readRecordsSubject = new Subject<void>();
-	private readonly createRecordsSubject = new Subject<IRecord[]>();
 	private readonly deleteSelectedRecordsSubject = new Subject<IRecord[]>();
 	private readonly deleteRecordSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord }>();
 
@@ -54,7 +58,9 @@ export class RecordService {
 		}),
 	);
 
-	private readonly createRecords$ = this.createRecordsSubject.pipe(
+	private readonly uploadImports$ = fromEvent<MessageEvent<IWorker<IRecord[]>>>(this.worker, 'message').pipe(
+		filter((event) => event.data.message === 'csv'),
+		map((event) => event.data.data),
 		switchMap((records) => {
 			const requests$ = records.map((record) => this.http.post<IRecordDto>(`${environment.baseUrl}/record`, mapRecordToDto(record)));
 			return requests$.length ? forkJoin(requests$) : of([]);
@@ -101,7 +107,7 @@ export class RecordService {
 				isNew ? ({ type: 'create', value: record } as TCrud<IRecord, 'create'>) : ({ type: 'update', value: record } as TCrud<IRecord, 'update'>),
 			),
 		),
-		this.createRecords$.pipe(map((value) => ({ type: 'create', value }) as TCrud<IRecord, 'create'>)),
+		this.uploadImports$.pipe(map((value) => ({ type: 'create', value }) as TCrud<IRecord, 'create'>)),
 		this.readRecords$.pipe(map((value) => ({ type: 'read', value }) as TCrud<IRecord[], 'read'>)),
 		this.deleteRecord$.pipe(map((value) => ({ type: 'delete', value }) as TCrud<IRecord, 'delete'>)),
 		this.deleteSelectedRecords$.pipe(map((value) => ({ type: 'delete', value }) as TCrud<IRecord, 'delete'>)),
@@ -141,8 +147,8 @@ export class RecordService {
 		this.deleteRecordSubject.next({ component, record });
 	}
 
-	public addRecords(records: IRecord[]) {
-		this.createRecordsSubject.next(records);
+	public importCsv(file: File) {
+		this.worker.postMessage({ message: 'csv', data: file } satisfies IWorker<File>);
 	}
 
 	public deleteSelectedRecords(records: IRecord[]) {

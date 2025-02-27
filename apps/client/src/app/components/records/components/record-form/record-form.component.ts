@@ -131,7 +131,7 @@ export class RecordFormComponent {
 		arrival: new FormControl<[TuiDay, TuiTime]>(this.getTuiDayTime(this.context.data?.arrival ?? new Date()), {
 			nonNullable: true,
 		}),
-		leaving: new FormControl<[TuiDay, TuiTime] | null>(this.context.data?.leaving ? this.getTuiDayTime(this.context.data.arrival) : null),
+		leaving: new FormControl<[TuiDay, TuiTime] | null>(this.context.data?.leaving ? this.getTuiDayTime(this.context.data.leaving) : null),
 		from: new FormControl<string>(this.context.data?.from ?? '', { nonNullable: true }),
 		to: new FormControl<string>(this.context.data?.to ?? '', { nonNullable: true }),
 		specialty: new FormControl<Specialty>(this.context.data?.specialty ?? 'internal', { nonNullable: true }),

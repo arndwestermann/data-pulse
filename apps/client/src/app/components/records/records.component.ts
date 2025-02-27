@@ -89,20 +89,20 @@ const thirdPartyImports = [TranslocoDirective];
 				}
 			</button>
 		</div>
-		<tui-scrollbar class="grow relative" [hidden]="true">
-			<div class="absolute bottom-0 right-0 z-10 flex flex-col gap-2">
-				@if (!scrollPosition() || scrollPosition() === 'bottom') {
-					<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('top')">
-						<tui-icon icon="@tui.fa.solid.arrow-up" />
-					</button>
-				}
+		<div class="absolute bottom-2 right-2 z-10 flex flex-col gap-2">
+			@if (!scrollPosition() || scrollPosition() === 'bottom') {
+				<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('top')">
+					<tui-icon icon="@tui.fa.solid.arrow-up" />
+				</button>
+			}
 
-				@if (!scrollPosition() || scrollPosition() === 'top') {
-					<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('bottom')">
-						<tui-icon icon="@tui.fa.solid.arrow-down" />
-					</button>
-				}
-			</div>
+			@if (!scrollPosition() || scrollPosition() === 'top') {
+				<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('bottom')">
+					<tui-icon icon="@tui.fa.solid.arrow-down" />
+				</button>
+			}
+		</div>
+		<tui-scrollbar class="grow" [hidden]="true">
 			<cdk-virtual-scroll-viewport
 				#viewport
 				tuiScrollable
@@ -251,7 +251,7 @@ const thirdPartyImports = [TranslocoDirective];
 		@reference '../../../styles.css';
 
 		:host {
-			@apply flex flex-col h-full p-4 gap-4;
+			@apply flex flex-col h-full p-4 gap-4 relative;
 		}
 
 		[tuiTh],

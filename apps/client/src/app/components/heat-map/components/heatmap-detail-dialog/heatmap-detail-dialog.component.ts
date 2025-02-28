@@ -8,23 +8,36 @@ import { RecordService } from '../../../../shared/services';
 import { IRecord } from '../../../../shared/models';
 import { RecordFormComponent } from '../../../../shared/components';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { TuiBadge } from '@taiga-ui/kit';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 @Component({
 	selector: 'dp-heatmap-detail-dialog',
-	imports: [DatePipe, TuiCardLarge, TuiAppearance, TuiHeader, TuiTitle],
+	imports: [DatePipe, TuiCardLarge, TuiAppearance, TuiHeader, TuiTitle, TuiBadge, TranslocoDirective],
 	template: `
 		<header tuiHeader>
 			<h2 tuiTitle>{{ context.data.day | date: 'longDate' : undefined : context.data.locale }}</h2>
 		</header>
 		@for (item of mappedRecords(); track $index) {
 			<button tuiCardLarge tuiAppearance="floating" type="button" class="hover:cursor-pointer" (pointerdown)="editRecord(item)">
-				<h1 tuiTitle>
-					{{ item.id }}
-					<span tuiSubtitle
-						>{{ item.arrival | date: 'short' : undefined : context.data.locale }} -
-						{{ item.leaving | date: 'short' : undefined : context.data.locale }}</span
-					>
-				</h1>
+				<header tuiHeader>
+					<h1 tuiTitle>
+						{{ item.id }}
+						<span tuiSubtitle
+							>{{ item.arrival | date: 'short' : undefined : context.data.locale }} -
+							{{ item.leaving | date: 'short' : undefined : context.data.locale }}</span
+						>
+					</h1>
+
+					<aside tuiAccessories *transloco="let transloco; prefix: 'specialty'">
+						<tui-badge appearance="primary" size="xl"> {{ transloco(item.specialty) }} </tui-badge>
+					</aside>
+				</header>
+
+				<section class="flex gap-2">
+					<tui-badge class="[min-inline-size:4rem] flex justify-center" appearance="positive" size="xl"> {{ item.from }} </tui-badge>
+					<tui-badge class="[min-inline-size:4rem] flex justify-center" appearance="negative" size="xl"> {{ item.to }} </tui-badge>
+				</section>
 			</button>
 		}
 	`,
@@ -32,7 +45,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 		@reference '../../../../../styles.css';
 
 		:host {
-			@apply flex flex-col gap-6 overflow-y-auto p-2 px-4 h-[600px];
+			@apply flex flex-col gap-6 overflow-y-auto p-8 h-[600px];
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,

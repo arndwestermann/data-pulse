@@ -305,9 +305,10 @@ export class HeatMapComponent {
 					new Date(this.dateRange().from.year, this.dateRange().from.month, this.dateRange().from.day, 0, 0, 0),
 					'MMMM yyyy',
 				) ?? 'Heatmap';
+			const textOffset = pdf.getTextWidth(text) / 2;
 
 			pdf.setFontSize(12);
-			pdf.text(text, pdfWidth / 2, 5);
+			pdf.text(text, pdfWidth / 2 - textOffset, 5);
 			pdf.save('heatmap.pdf');
 		});
 	}

@@ -9,7 +9,7 @@ import { DatePipe, KeyValue } from '@angular/common';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { TuiButton, TuiDialogService, TuiIcon } from '@taiga-ui/core';
 import { BehaviorSubject, combineLatest, map, shareReplay } from 'rxjs';
 import { HeatmapDetailDialogComponent } from './components/heatmap-detail-dialog/heatmap-detail-dialog.component';

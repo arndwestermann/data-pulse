@@ -1,4 +1,4 @@
-import { DoWork, runWorker } from 'observable-webworker';
+import { DoWork, runWorker } from '@arndwestermann/observable-webworker';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { getHeatMap } from './utils/get-heat-map/get-heat-map.util';

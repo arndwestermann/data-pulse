@@ -1,0 +1,36 @@
+{
+	"name": "observable-webworker",
+	"$schema": "../../node_modules/nx/schemas/project-schema.json",
+	"sourceRoot": "libs/observable-webworker/src",
+	"prefix": "dp",
+	"projectType": "library",
+	"tags": [],
+	"targets": {
+		"build": {
+			"executor": "@nx/angular:package",
+			"outputs": ["{workspaceRoot}/dist/{projectRoot}"],
+			"options": {
+				"project": "libs/observable-webworker/ng-package.json"
+			},
+			"configurations": {
+				"production": {
+					"tsConfig": "libs/observable-webworker/tsconfig.lib.prod.json"
+				},
+				"development": {
+					"tsConfig": "libs/observable-webworker/tsconfig.lib.json"
+				}
+			},
+			"defaultConfiguration": "production"
+		},
+		"test": {
+			"executor": "@nx/vite:test",
+			"outputs": ["{options.reportsDirectory}"],
+			"options": {
+				"reportsDirectory": "../../coverage/libs/observable-webworker"
+			}
+		},
+		"lint": {
+			"executor": "@nx/eslint:lint"
+		}
+	}
+}

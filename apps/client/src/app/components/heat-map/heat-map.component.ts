@@ -18,7 +18,7 @@ import { IHeatmapDetailDialogContext } from './models/heatmap-detail-dialog.mode
 import { CustomHeatmapComponent } from './components/custom-heatmap/custom-heatmap.component';
 import { RecordService } from '../../shared/services';
 import { IHeatMap } from './models/heat-map.model';
-import { fromWorker } from 'observable-webworker';
+import { fromWorker } from '@arndwestermann/observable-webworker';
 
 interface IHeatmapChartData<T> {
 	name: string;

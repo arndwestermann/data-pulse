@@ -31,7 +31,7 @@ import { fromCache } from '../../shared/utils';
 
 import { combineLatest, debounceTime, filter, map, of, Subject, switchMap, take, tap } from 'rxjs';
 
-import { RecordFormComponent } from './components/record-form/record-form.component';
+import { RecordFormComponent } from '../../shared/components';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';

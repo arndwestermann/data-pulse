@@ -1,23 +1,24 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, isDevMode, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { SPECIALTIES } from '../../shared/models';
+import { IRecord, SPECIALTIES } from '../../shared/models';
 import { startOfMonth, endOfMonth, isWithinInterval, isSameDay } from 'date-fns';
 import { TuiInputDateRangeModule } from '@taiga-ui/legacy';
 import { FormsModule } from '@angular/forms';
 import { TuiDayRange, TuiDay } from '@taiga-ui/cdk';
-import { getHeatMap } from './utils/get-heat-map/get-heat-map.util';
 import { DatePipe, KeyValue } from '@angular/common';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { TuiButton, TuiDialogService, TuiIcon } from '@taiga-ui/core';
-import { map } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, shareReplay } from 'rxjs';
 import { HeatmapDetailDialogComponent } from './components/heatmap-detail-dialog/heatmap-detail-dialog.component';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { IHeatmapDetailDialogContext } from './models/heatmap-detail-dialog.model';
 import { CustomHeatmapComponent } from './components/custom-heatmap/custom-heatmap.component';
 import { RecordService } from '../../shared/services';
+import { IHeatMap } from './models/heat-map.model';
+import { fromWorker } from '@arndwestermann/observable-webworker';
 
 interface IHeatmapChartData<T> {
 	name: string;
@@ -37,7 +38,7 @@ interface IHeatmapSeries<T> {
 		<ng-container *transloco="let transloco">
 			<div class="flex flex-col justify-center h-full grow overflow-y-auto overflow-x-hidden">
 				<div class="flex gap-2 items-center" data-html2canvas-ignore>
-					<tui-input-date-range [(ngModel)]="dateRange" class="w-64">
+					<tui-input-date-range [(ngModel)]="dateRange" (ngModelChange)="onDateRangeChanged($event)" class="w-64">
 						{{ transloco('heatmap.chooseRange') }}
 						<input placeholder="From - To" tuiTextfieldLegacy />
 					</tui-input-date-range>
@@ -106,6 +107,22 @@ export class HeatMapComponent {
 	private readonly hostElement = inject(ElementRef<HTMLElement>);
 	private readonly translocoService = inject(TranslocoService);
 
+	private readonly dateRangeSubject = new BehaviorSubject(this.initialDateRange());
+	private readonly dateRange$ = this.dateRangeSubject.pipe(
+		map((range) => ({
+			from: new Date(range.from.year, range.from.month, range.from.day, 0, 0, 0),
+			to: new Date(range.to.year, range.to.month, range.to.day, 23, 59, 59),
+		})),
+	);
+
+	private readonly workerInput$ = combineLatest([this.recordService.records$, this.dateRange$]).pipe(
+		map(([records, { from, to }]) => ({ records, from, to })),
+	);
+	private readonly heatmap$ = fromWorker<{ records: IRecord[]; from: Date; to: Date }, IHeatMap[]>(
+		() => new Worker(new URL('./heatmap.worker', import.meta.url), { type: 'module' }),
+		this.workerInput$,
+	).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+
 	public readonly locale = toSignal(
 		this.translocoService.langChanges$.pipe(
 			map((lang) => {
@@ -126,13 +143,7 @@ export class HeatMapComponent {
 
 	public readonly dateRange = signal<TuiDayRange>(this.initialDateRange());
 
-	public readonly heatMap = computed(() =>
-		getHeatMap(
-			this.data(),
-			new Date(this.dateRange().from.year, this.dateRange().from.month, this.dateRange().from.day, 0, 0, 0),
-			new Date(this.dateRange().to.year, this.dateRange().to.month, this.dateRange().to.day, 23, 59, 59),
-		),
-	);
+	public readonly heatMap = toSignal(this.heatmap$, { initialValue: [] });
 
 	public readonly admissions = computed(() =>
 		this.heatMap().map((heatMapItem) => ({ key: heatMapItem.key, value: this.data().filter((item) => isSameDay(item.arrival, heatMapItem.key)) })),
@@ -206,10 +217,13 @@ export class HeatMapComponent {
 
 	public readonly groupedBySpecialty = computed(() => {
 		const hashMap = new Map<string, number>();
+		const start = new Date(this.dateRange().from.year, this.dateRange().from.month, this.dateRange().from.day, 0, 0, 0);
+		const end = new Date(this.dateRange().to.year, this.dateRange().to.month, this.dateRange().to.day, 23, 59, 59);
+
 		const filteredData = this.data().filter((record) =>
 			isWithinInterval(record.arrival, {
-				start: new Date(this.dateRange().from.year, this.dateRange().from.month, this.dateRange().from.day, 0, 0, 0),
-				end: new Date(this.dateRange().to.year, this.dateRange().to.month, this.dateRange().to.day, 23, 59, 59),
+				start,
+				end,
 			}),
 		);
 
@@ -235,9 +249,10 @@ export class HeatMapComponent {
 	public openDialog(event: { name: string; value: string | number; label: string; series: string; data: Date }): void {
 		if (typeof event.value === 'string' && event.value.includes('data')) return;
 
+		const records = this.heatMap().find((item) => item.key === event.data)?.value[+event.series.split(':')[0]] ?? [];
 		const context: IHeatmapDetailDialogContext = {
 			day: event.data,
-			records: this.heatMap().find((item) => item.key === event.data)?.value[+event.series.split(':')[0]] ?? [],
+			records: records.map((record) => record.uuid).filter((uuid) => uuid !== undefined),
 			locale: this.locale(),
 		};
 		this.dialogService
@@ -246,6 +261,10 @@ export class HeatMapComponent {
 				size: 'l',
 			})
 			.subscribe();
+	}
+
+	public onDateRangeChanged(event: TuiDayRange): void {
+		this.dateRangeSubject.next(event);
 	}
 
 	public print(): void {
@@ -286,9 +305,10 @@ export class HeatMapComponent {
 					new Date(this.dateRange().from.year, this.dateRange().from.month, this.dateRange().from.day, 0, 0, 0),
 					'MMMM yyyy',
 				) ?? 'Heatmap';
+			const textOffset = pdf.getTextWidth(text) / 2;
 
 			pdf.setFontSize(12);
-			pdf.text(text, pdfWidth / 2, 5);
+			pdf.text(text, pdfWidth / 2 - textOffset, 5);
 			pdf.save('heatmap.pdf');
 		});
 	}

@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import 'tailwindcss' important;
 
 @theme {
 	--breakpoint-2xl: 1440px;

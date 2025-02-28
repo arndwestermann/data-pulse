@@ -10,9 +10,9 @@ import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { TuiAutoFocus, TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { TuiDataListWrapper, TuiFilterByInputPipe, TuiStringifyContentPipe } from '@taiga-ui/kit';
 import { IRecordForm } from '../../models/record-form.model';
-import { RecordService } from '../../../../shared/services';
+import { RecordService } from '../../services';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { IRecord, SPECIALTIES, Specialty } from '../../../../shared/models';
+import { IRecord, SPECIALTIES, Specialty } from '../../models';
 import { idExitsValidator } from './id-exists.validator';
 
 const angularImports = [ReactiveFormsModule, NgTemplateOutlet];
@@ -105,7 +105,7 @@ const taigaUiImports = [
 		</form>
 	`,
 	styles: `
-		@reference '../../../../../styles.css';
+		@reference '../../../../styles.css';
 
 		:host {
 			@apply block;
@@ -126,12 +126,12 @@ export class RecordFormComponent {
 			nonNullable: true,
 			validators: [Validators.required],
 			asyncValidators: this.context.data?.id ? [] : [idExitsValidator(this.recordsService)],
-			updateOn: 'blur',
+			updateOn: this.context.data?.id ? 'change' : 'blur',
 		}),
 		arrival: new FormControl<[TuiDay, TuiTime]>(this.getTuiDayTime(this.context.data?.arrival ?? new Date()), {
 			nonNullable: true,
 		}),
-		leaving: new FormControl<[TuiDay, TuiTime] | null>(this.context.data?.leaving ? this.getTuiDayTime(this.context.data.arrival) : null),
+		leaving: new FormControl<[TuiDay, TuiTime] | null>(this.context.data?.leaving ? this.getTuiDayTime(this.context.data.leaving) : null),
 		from: new FormControl<string>(this.context.data?.from ?? '', { nonNullable: true }),
 		to: new FormControl<string>(this.context.data?.to ?? '', { nonNullable: true }),
 		specialty: new FormControl<Specialty>(this.context.data?.specialty ?? 'internal', { nonNullable: true }),
@@ -145,13 +145,12 @@ export class RecordFormComponent {
 		const arrival = this.toNativeDateTime(value.arrival[0], value.arrival[1]);
 		const leaving = value.leaving ? this.toNativeDateTime(value.leaving[0], value.leaving[1]) : undefined;
 
-		const record: IRecord = {
-			...this.form.getRawValue(),
+		this.context.completeWith({
+			...value,
 			uuid: uuid ?? undefined,
 			arrival,
 			leaving,
-		};
-		this.context.completeWith(record);
+		});
 	}
 
 	public keyPress(event: KeyboardEvent): void {

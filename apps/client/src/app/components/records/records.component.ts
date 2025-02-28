@@ -26,17 +26,17 @@ import { DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
-import { CSV_DATA_SEPARATOR, CSV_LINE_SEPARATOR, IRecord, SPECIALTIES, Specialty, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY } from '../../shared/models';
-import { fromCache, parseCSV, uuid as getUUID } from '../../shared/utils';
+import { IRecord, SPECIALTIES, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY } from '../../shared/models';
+import { fromCache } from '../../shared/utils';
 
 import { combineLatest, debounceTime, filter, map, of, Subject, switchMap, take, tap } from 'rxjs';
 
-import { RecordFormComponent } from './components/record-form/record-form.component';
+import { RecordFormComponent } from '../../shared/components';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { AppService, RecordService } from '../../shared/services';
+import { AppService, RecordService, UserService } from '../../shared/services';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TuiCheckbox, TuiDataListDropdownManager, TuiDataListWrapper } from '@taiga-ui/kit';
 import { TuiInputDateTimeModule, TuiInputTagModule, tuiInputTagOptionsProvider, TuiTextfieldControllerModule } from '@taiga-ui/legacy';
@@ -72,9 +72,13 @@ const thirdPartyImports = [TranslocoDirective];
 			<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
 				<tui-icon icon="@tui.fa.solid.plus" />
 			</button>
-			<!--<button type="button" tuiButton appearance="primary" size="s" (click)="fileInput.click()">
-				<tui-icon icon="@tui.fa.solid.upload" />
-			</button> -->
+
+			@if (isAdmin()) {
+				<button type="button" tuiButton appearance="primary" size="s" (click)="fileInput.click()">
+					<tui-icon icon="@tui.fa.solid.upload" />
+				</button>
+			}
+
 			<input #fileInput class="hidden" type="file" accept=".csv" [multiple]="false" (change)="importFile($event)" />
 			<button
 				type="button"
@@ -89,20 +93,20 @@ const thirdPartyImports = [TranslocoDirective];
 				}
 			</button>
 		</div>
-		<tui-scrollbar class="grow relative" [hidden]="true">
-			<div class="absolute bottom-0 right-0 z-10 flex flex-col gap-2">
-				@if (!scrollPosition() || scrollPosition() === 'bottom') {
-					<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('top')">
-						<tui-icon icon="@tui.fa.solid.arrow-up" />
-					</button>
-				}
+		<div class="absolute bottom-2 right-2 z-10 flex flex-col gap-2">
+			@if (!scrollPosition() || scrollPosition() === 'bottom') {
+				<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('top')">
+					<tui-icon icon="@tui.fa.solid.arrow-up" />
+				</button>
+			}
 
-				@if (!scrollPosition() || scrollPosition() === 'top') {
-					<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('bottom')">
-						<tui-icon icon="@tui.fa.solid.arrow-down" />
-					</button>
-				}
-			</div>
+			@if (!scrollPosition() || scrollPosition() === 'top') {
+				<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('bottom')">
+					<tui-icon icon="@tui.fa.solid.arrow-down" />
+				</button>
+			}
+		</div>
+		<tui-scrollbar class="grow" [hidden]="true">
 			<cdk-virtual-scroll-viewport
 				#viewport
 				tuiScrollable
@@ -251,7 +255,7 @@ const thirdPartyImports = [TranslocoDirective];
 		@reference '../../../styles.css';
 
 		:host {
-			@apply flex flex-col h-full p-4 gap-4;
+			@apply flex flex-col h-full p-4 gap-4 relative;
 		}
 
 		[tuiTh],
@@ -309,6 +313,7 @@ export class RecordsComponent implements AfterViewInit {
 	private readonly translocoService = inject(TranslocoService);
 	private readonly recordService = inject(RecordService);
 	private readonly destroyRef = inject(DestroyRef);
+	private readonly userService = inject(UserService);
 
 	private readonly scrollEventSubject = new Subject<HTMLElement>();
 
@@ -347,6 +352,8 @@ export class RecordsComponent implements AfterViewInit {
 
 	private readonly scrollContainer = viewChild.required<CdkVirtualScrollViewport>('viewport');
 	private readonly rows = viewChildren<TuiTableTr<IRecord>, ElementRef>('row', { read: ElementRef });
+
+	public readonly isAdmin = toSignal(this.userService.isAdmin$, { initialValue: false });
 
 	public readonly recordsMarkedAsCorrect = fromCache<string[]>(RECORDS_MARKED_AS_CORRECT_STORAGE_KEY, []);
 
@@ -454,70 +461,13 @@ export class RecordsComponent implements AfterViewInit {
 	}
 
 	public importFile(event: Event) {
-		const file = (event.target as HTMLInputElement).files?.item(0);
+		const fileInput = event.target as HTMLInputElement;
+		const file = fileInput.files?.item(0);
 
 		if (!file) return;
 
-		const fileReader = new FileReader();
-
-		fileReader.onload = () => {
-			const parsedCsv = parseCSV<{
-				id: string;
-				runningId: string;
-				number: string;
-				arrivalDate: string;
-				arrivalTime: string;
-				leavingDate: string;
-				leavingTime: string;
-				from: string;
-				to: string;
-				specialty: string;
-				infection: string;
-			}>(fileReader.result as string, CSV_LINE_SEPARATOR, CSV_DATA_SEPARATOR);
-			const records: IRecord[] = [];
-
-			for (const element of parsedCsv) {
-				const uuid = getUUID();
-				const arraivalDate = element.arrivalDate.split('.');
-				const arraivalTime = element.arrivalTime.split(':');
-				const leavingDate = element.leavingDate.split('.');
-				const leavingTime = element.leavingTime.split(':');
-
-				const yearArrival = +arraivalDate[2];
-				const monthArrival = +arraivalDate[1];
-				const dayArrival = +arraivalDate[0];
-				const hourArrival = +arraivalTime[0];
-				const minuteArrival = +arraivalTime[1];
-				const secondArrival = +arraivalTime[2];
-
-				const yearLeaving = +leavingDate[2];
-				const monthLeaving = +leavingDate[1];
-				const dayLeaving = +leavingDate[0];
-				const hourLeaving = +leavingTime[0];
-				const minuteLeaving = +leavingTime[1];
-				const secondLeaving = +leavingTime[2];
-
-				const arrival = new Date(yearArrival, monthArrival - 1, dayArrival, hourArrival, minuteArrival, secondArrival);
-				const leaving = new Date(yearLeaving, monthLeaving - 1, dayLeaving, hourLeaving, minuteLeaving, secondLeaving);
-
-				records.push({
-					uuid: uuid,
-					id: element.id,
-					arrival,
-					leaving,
-					from: element.from,
-					to: element.to,
-					specialty: element.specialty as Specialty,
-				});
-			}
-
-			console.log(parsedCsv);
-			console.log(records);
-
-			this.recordService.addRecords(records);
-		};
-
-		fileReader.readAsText(file);
+		this.recordService.importCsv(file);
+		fileInput.value = '';
 	}
 
 	public deleteSelectedRecords(records: IRecord[]): void {

@@ -46,3 +46,6 @@ migrations.json
 .env
 /ssl
 nginx.conf
+
+vite.config.*.timestamp*
+vitest.config.*.timestamp*

@@ -1,7 +1,5 @@
-import { IRecord } from '../../../shared/models';
-
 export interface IHeatmapDetailDialogContext {
 	day: Date;
-	records: IRecord[];
+	records: string[];
 	locale: string;
 }

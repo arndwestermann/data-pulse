@@ -249,9 +249,10 @@ export class HeatMapComponent {
 	public openDialog(event: { name: string; value: string | number; label: string; series: string; data: Date }): void {
 		if (typeof event.value === 'string' && event.value.includes('data')) return;
 
+		const records = this.heatMap().find((item) => item.key === event.data)?.value[+event.series.split(':')[0]] ?? [];
 		const context: IHeatmapDetailDialogContext = {
 			day: event.data,
-			records: this.heatMap().find((item) => item.key === event.data)?.value[+event.series.split(':')[0]] ?? [],
+			records: records.map((record) => record.uuid).filter((uuid) => uuid !== undefined),
 			locale: this.locale(),
 		};
 		this.dialogService

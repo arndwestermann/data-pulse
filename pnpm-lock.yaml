@@ -63,8 +63,8 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0(@nestjs/common@11.1.10(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.10)(reflect-metadata@0.2.2)(rxjs@7.8.2)(typeorm@0.3.28(babel-plugin-macros@3.1.0)(mysql2@3.16.0)(ts-node@10.9.2(@swc/core@1.5.29(@swc/helpers@0.5.17))(@types/node@25.0.3)(typescript@5.9.3)))
       '@swimlane/ngx-charts':
-        specifier: ^21.1.3
-        version: 21.1.3(85beb1da7df4138a1b409ea5566c6d41)
+        specifier: 23.1.0
+        version: 23.1.0(85beb1da7df4138a1b409ea5566c6d41)
       '@taiga-ui/addon-charts':
         specifier: 4.66.0
         version: 4.66.0(@angular/common@21.0.6(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))(rxjs@7.8.2))(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))(@ng-web-apis/common@4.14.0(@angular/common@21.0.6(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))(rxjs@7.8.2))(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))(rxjs@7.8.2))(@taiga-ui/cdk@4.66.0(205f6141f78a3fced510c0c3a0c1f488))(@taiga-ui/core@4.66.0(689e65431ffb5726737662036c57cbbe))(@taiga-ui/polymorpheus@4.9.0(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))(@angular/platform-browser@21.0.6(@angular/animations@21.0.6(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0)))(@angular/common@21.0.6(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))(rxjs@7.8.2))(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))))
@@ -3768,16 +3768,16 @@ packages:
   '@swc/types@0.1.25':
     resolution: {integrity: sha512-iAoY/qRhNH8a/hBvm3zKj9qQ4oc2+3w1unPJa2XvTK3XjeLXtzcCingVPw/9e5mn1+0yPqxcBGp9Jf0pkfMb1g==}
 
-  '@swimlane/ngx-charts@21.1.3':
-    resolution: {integrity: sha512-9HpvJSVlsfZGUacG2FhLQwKlzD4TCcozoqKuOtD3NGM3FahOIKt8V2qU65pyhV+pPc+rYUY3jluKvg6Rj3itWA==}
+  '@swimlane/ngx-charts@23.1.0':
+    resolution: {integrity: sha512-f2lBc8M9164PtylLDLd98XqO6owSw4LQMT9L/vQovT3nIjMO7t5l9JnytyOB8s5KImo3p+7x+1/HYxBZ5iOVWA==}
     peerDependencies:
-      '@angular/animations': 17.x || 18.x
-      '@angular/cdk': 17.x || 18.x
-      '@angular/common': 17.x || 18.x
-      '@angular/core': 17.x || 18.x
-      '@angular/forms': 17.x || 18.x
-      '@angular/platform-browser': 17.x || 18.x
-      '@angular/platform-browser-dynamic': 17.x || 18.x
+      '@angular/animations': 18.x || 19.x || 20.x
+      '@angular/cdk': 18.x || 19.x || 20.x
+      '@angular/common': 18.x || 19.x || 20.x
+      '@angular/core': 18.x || 19.x || 20.x
+      '@angular/forms': 18.x || 19.x || 20.x
+      '@angular/platform-browser': 18.x || 19.x || 20.x
+      '@angular/platform-browser-dynamic': 18.x || 19.x || 20.x
       rxjs: 7.x
 
   '@taiga-ui/addon-charts@4.66.0':
@@ -14648,7 +14648,7 @@ snapshots:
     dependencies:
       '@swc/counter': 0.1.3
 
-  '@swimlane/ngx-charts@21.1.3(85beb1da7df4138a1b409ea5566c6d41)':
+  '@swimlane/ngx-charts@23.1.0(85beb1da7df4138a1b409ea5566c6d41)':
     dependencies:
       '@angular/animations': 21.0.6(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))
       '@angular/cdk': 21.0.5(@angular/common@21.0.6(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))(rxjs@7.8.2))(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2)(zone.js@0.16.0))(rxjs@7.8.2)

@@ -31,7 +31,7 @@
 		"@nestjs/passport": "^11.0.5",
 		"@nestjs/platform-express": "^11.1.10",
 		"@nestjs/typeorm": "^11.0.0",
-		"@swimlane/ngx-charts": "^21.1.3",
+		"@swimlane/ngx-charts": "23.1.0",
 		"@taiga-ui/addon-charts": "4.66.0",
 		"@taiga-ui/addon-commerce": "4.66.0",
 		"@taiga-ui/addon-mobile": "4.66.0",
@@ -154,14 +154,14 @@
 	},
 	"overrides": {
 		"@swimlane/ngx-charts": {
-			"@angular/animations@": ">=18.0.0",
-			"@angular/cdk@": ">=18.0.0",
-			"@angular/common@": ">=18.0.0",
-			"@angular/core@": ">=18.0.0",
-			"@angular/forms@": ">=18.0.0",
-			"@angular/platform-browser@": ">=18.0.0",
-			"@angular/platform-browser-dynamic@": ">=18.0.0",
-			"@angular/router@": ">=18.0.0"
+			"@angular/animations@": ">=20.0.0",
+			"@angular/cdk@": ">=20.0.0",
+			"@angular/common@": ">=20.0.0",
+			"@angular/core@": ">=20.0.0",
+			"@angular/forms@": ">=20.0.0",
+			"@angular/platform-browser@": ">=20.0.0",
+			"@angular/platform-browser-dynamic@": ">=20.0.0",
+			"@angular/router@": ">=20.0.0"
 		}
 	}
 }

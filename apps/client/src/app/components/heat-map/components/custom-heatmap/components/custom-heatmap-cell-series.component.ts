@@ -16,31 +16,31 @@ interface Cell {
 	y: number;
 }
 @Component({
-	// eslint-disable-next-line @angular-eslint/component-selector
 	selector: 'g[dp-custom-heat-map-cell-series]',
 	imports: [CustomHeatMapCellComponent, NgxChartsModule],
 	template: `
-		<svg:g
-			dp-custom-heat-map-cell
-			*ngFor="let c of cells; trackBy: trackBy"
-			[x]="c.x"
-			[y]="c.y"
-			[width]="c.width"
-			[height]="c.height"
-			[fill]="c.fill"
-			[data]="c.data"
-			(select)="onClick(c.cell)"
-			(activate)="activate.emit(c.cell)"
-			(deactivate)="deactivate.emit(c.cell)"
-			[gradient]="gradient"
-			[animations]="animations"
-			ngx-tooltip
-			[tooltipDisabled]="tooltipDisabled"
-			[tooltipPlacement]="placementTypes.Top"
-			[tooltipType]="styleTypes.tooltip"
-			[tooltipTitle]="tooltipTemplate ? undefined : tooltipText(c)"
-			[tooltipTemplate]="tooltipTemplate"
-			[tooltipContext]="{ series: c.series, name: c.label, value: c.data }"></svg:g>
+		@for (c of cells; track trackBy($index, c)) {
+			<svg:g
+				dp-custom-heat-map-cell
+				[x]="c.x"
+				[y]="c.y"
+				[width]="c.width"
+				[height]="c.height"
+				[fill]="c.fill"
+				[data]="c.data"
+				(select)="onClick(c.cell)"
+				(activate)="activate.emit(c.cell)"
+				(deactivate)="deactivate.emit(c.cell)"
+				[gradient]="gradient"
+				[animations]="animations"
+				ngx-tooltip
+				[tooltipDisabled]="tooltipDisabled"
+				[tooltipPlacement]="placementTypes.Top"
+				[tooltipType]="styleTypes.tooltip"
+				[tooltipTitle]="tooltipTemplate ? undefined : tooltipText(c)"
+				[tooltipTemplate]="tooltipTemplate"
+				[tooltipContext]="{ series: c.series, name: c.label, value: c.data }"></svg:g>
+		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 })

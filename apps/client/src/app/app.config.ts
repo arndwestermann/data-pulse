@@ -1,11 +1,4 @@
-import {
-	ApplicationConfig,
-	isDevMode,
-	importProvidersFrom,
-	provideExperimentalZonelessChangeDetection,
-	inject,
-	provideAppInitializer,
-} from '@angular/core';
+import { ApplicationConfig, isDevMode, importProvidersFrom, inject, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -13,7 +6,7 @@ import { appRoutes } from './app.routes';
 import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 import { TranslocoHttpLoader } from './transloco-loader';
 import { provideTransloco, TranslocoService } from '@jsverse/transloco';
-import { NG_EVENT_PLUGINS } from '@taiga-ui/event-plugins';
+import { provideEventPlugins } from '@taiga-ui/event-plugins';
 import { TuiDialog } from '@taiga-ui/core';
 import { TUI_LANGUAGE, TUI_GERMAN_LANGUAGE, TUI_ENGLISH_LANGUAGE } from '@taiga-ui/i18n';
 
@@ -33,7 +26,7 @@ export function initializeApplication(translocoService: TranslocoService): () =>
 export const appConfig: ApplicationConfig = {
 	providers: [
 		provideAnimations(),
-		provideExperimentalZonelessChangeDetection(),
+		provideZonelessChangeDetection(),
 		provideRouter(appRoutes),
 		provideHttpClient(withInterceptorsFromDi(), withInterceptors([accessTokenInterceptor])),
 		provideTransloco({
@@ -46,7 +39,7 @@ export const appConfig: ApplicationConfig = {
 			loader: TranslocoHttpLoader,
 		}),
 		importProvidersFrom(TuiDialog),
-		NG_EVENT_PLUGINS,
+		provideEventPlugins(),
 		{ provide: STORAGE_TOKEN, useValue: localStorage },
 		provideAppInitializer(() => {
 			const initializerFn = initializeApplication(inject(TranslocoService));

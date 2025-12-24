@@ -1,6 +1,23 @@
 ---
 name: data-pulse
 services:
+  caddy:
+    image: caddy:2.10.2
+    container_name: caddy
+    ports:
+      - 80:80
+      - 443:443
+      - 3000:3000
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - data-pulse
+    restart: unless-stopped
+
   db:
     image: mariadb:11.6.2-noble
     restart: unless-stopped
@@ -23,6 +40,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
   api:
     build:
       context: .
@@ -36,6 +54,7 @@ services:
       - 3001:3000
     networks:
       - data-pulse
+
   client:
     build:
       context: .
@@ -43,6 +62,7 @@ services:
       args:
         - ENVIRONMENT=${ENVIRONMENT}
         - NGINX_CONFIG=${NGINX_CONFIG}
+      target: experimental
     container_name: client
     depends_on:
       db:
@@ -57,4 +77,6 @@ services:
 networks:
   data-pulse:
 volumes:
+  caddy_data:
+  caddy_config:
   db-data-pulse:

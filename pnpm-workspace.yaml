@@ -1,0 +1,7 @@
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@tailwindcss/oxide'
+  - '@swc/core'
+  - bcrypt
+  - esbuild
+  - nx

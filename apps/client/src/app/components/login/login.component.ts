@@ -1,51 +1,38 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { TuiButton, TuiError, TuiIcon, TuiTextfield } from '@taiga-ui/core';
 import { AppService, AuthenticationService } from '../../shared/services';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { form, required, Field, submit } from '@angular/forms/signals';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { TuiButtonLoading, TuiPassword } from '@taiga-ui/kit';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { map, merge } from 'rxjs';
 
 @Component({
 	selector: 'dp-login',
-	imports: [ReactiveFormsModule, TuiTextfield, TuiButton, TuiButtonLoading, TuiIcon, TuiPassword, TuiError, TranslocoDirective],
+	imports: [TuiTextfield, TuiButton, TuiButtonLoading, TuiIcon, TuiPassword, TuiError, TranslocoDirective, Field],
 	template: `
-		<ng-container *transloco="let transloco" [formGroup]="credentials">
+		<ng-container *transloco="let transloco">
 			<tui-textfield class="w-full md:w-1/3">
-				<input
-					tuiTextfield
-					formControlName="username"
-					[invalid]="(credentials.controls.username.touched && this.credentials.controls.username.getError('required')) || wrongCredentials()"
-					[placeholder]="transloco('profile.username')"
-					(keypress)="onKeyPress($event)" />
+				@let username = form.username;
+				<input tuiTextfield [field]="username" [placeholder]="transloco('profile.username')" (keypress)="onKeyPress($event)" />
+				@for (error of username().errors(); track error.kind) {
+					@if (username().touched() && username().invalid()) {
+						<tui-error [error]="transloco('validation.' + error.kind)" />
+					}
+				}
 			</tui-textfield>
-			<tui-error
-				[error]="
-					credentials.controls.username.touched && this.credentials.controls.username.getError('required')
-						? transloco('validation.required', { field: transloco('profile.username') })
-						: null
-				" />
 			<tui-textfield class="w-full md:w-1/3">
-				<input
-					tuiTextfield
-					formControlName="password"
-					type="password"
-					[invalid]="(credentials.controls.password.touched && this.credentials.controls.password.getError('required')) || wrongCredentials()"
-					[placeholder]="transloco('profile.password')"
-					(keypress)="onKeyPress($event)" />
+				@let password = form.password;
+				<input tuiTextfield [field]="password" type="password" [placeholder]="transloco('profile.password')" (keypress)="onKeyPress($event)" />
+				@for (error of password().errors(); track error.kind) {
+					@if (password().touched() && password().invalid()) {
+						<tui-error [error]="transloco('validation.' + error.kind)" />
+					}
+				}
 				<tui-icon tuiPassword />
 			</tui-textfield>
-			<tui-error
-				[error]="
-					credentials.controls.password.touched && this.credentials.controls.password.getError('required')
-						? transloco('validation.required', { field: transloco('profile.password') })
-						: null
-				" />
 
 			<tui-error [error]="wrongCredentials() ? transloco('login.wrongCredentials') : null" />
-
-			<span>{{ credentials.getError('wrongCredentials') }}</span>
 
 			<button tuiButton type="button" (click)="login()" [loading]="isLoading()">
 				{{ transloco('general.login') }}
@@ -64,28 +51,29 @@ import { map, merge } from 'rxjs';
 export class LoginComponent {
 	private readonly appService = inject(AppService);
 	private readonly authService = inject(AuthenticationService);
+	private readonly loginModel = signal({
+		username: '',
+		password: '',
+	});
 
 	public readonly isLoading = toSignal(this.appService.isLoading$, { initialValue: false });
 
-	public readonly credentials = new FormGroup({
-		username: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
-		password: new FormControl<string>('', { nonNullable: true, validators: [Validators.required] }),
+	public readonly form = form(this.loginModel, (schema) => {
+		required(schema.username);
+		required(schema.password);
 	});
 
-	public readonly wrongCredentials$ = merge(
-		this.authService.wrongCredentials$.pipe(map(() => true)),
-		this.credentials.valueChanges.pipe(map(() => false)),
+	public readonly wrongCredentials = toSignal(
+		merge(this.authService.wrongCredentials$.pipe(map(() => true)), toObservable(this.form().value).pipe(map(() => false))),
+		{ initialValue: false },
 	);
 
-	public readonly wrongCredentials = toSignal(this.wrongCredentials$, { initialValue: false });
-
 	public login(): void {
-		if (this.credentials.invalid) {
-			this.credentials.markAllAsTouched();
-			this.credentials.updateValueAndValidity();
-		} else {
-			this.authService.login(this.credentials.controls.username.value, this.credentials.controls.password.value);
-		}
+		submit(this.form, async (value) => {
+			const raw = value().value();
+
+			this.authService.login(raw.username, raw.password);
+		});
 	}
 
 	public onKeyPress(event: KeyboardEvent): void {

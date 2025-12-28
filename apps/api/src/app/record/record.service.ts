@@ -4,8 +4,9 @@ import { UpdateRecordDto } from './dto/update-record.dto';
 import { Record } from './entities/record.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { from, Observable, of, switchMap } from 'rxjs';
+import { from, map, Observable, of, switchMap } from 'rxjs';
 import { UserService } from '../user/user.service';
+import { applyDynamicFilters, DEFAULT_ORDER, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IError, IQueryOptions } from '@arndwestermann/common';
 
 @Injectable()
 export class RecordService {
@@ -44,6 +45,27 @@ export class RecordService {
 				},
 			}),
 		);
+	}
+
+	public findAllV2(
+		userId: string,
+		{ page = DEFAULT_PAGE, size = DEFAULT_PAGE_SIZE, order = DEFAULT_ORDER, filters }: IQueryOptions,
+	): Observable<{ data: Record[]; count: number } | IError> {
+		const offset = (page - 1) * size;
+		const direction = order.toUpperCase() as 'ASC' | 'DESC';
+		const alias = 'record';
+
+		const qb = this.recordRepository.createQueryBuilder(alias).addSelect(`case when ISNULL(${alias}.leaving) then 1 else 0 end`, 'leavingNullLast');
+
+		applyDynamicFilters(qb, alias, userId, filters, ['arrival', 'leaving']);
+
+		qb.addSelect(`(CASE WHEN ${alias}.leaving IS NULL THEN 1 ELSE 0 END)`, 'leavingNullLast')
+			.addOrderBy('arrival', direction)
+			.addOrderBy('leaving', direction);
+
+		qb.skip(offset).take(size);
+
+		return from(qb.getManyAndCount()).pipe(map(([data, count]) => ({ data, count })));
 	}
 
 	public findOne(uuid: string, user: string): Observable<Record | null> {

@@ -1,0 +1,13 @@
+export type TOperator =
+	| 'eq' // EQUALS
+	| 'ne' // NOT_EQUALS
+	| 'like' // LIKE
+	| 'in' // IN
+	| 'notIn' // NOT_IN
+	| 'gt' // GREATER_THAN
+	| 'gte' // GREATER_THAN_OR_EQUAL
+	| 'lt' // LESS_THAN
+	| 'lte' // LESS_THAN_OR_EQUAL
+	| 'between' // BETWEEN
+	| 'isNull' // IS_NULL
+	| 'isNotNull'; // IS_NOT_NULL

@@ -48,6 +48,11 @@
 		"@nx/vitest:test": {
 			"cache": true,
 			"inputs": ["default", "^production"]
+		},
+		"@nx/js:tsc": {
+			"cache": true,
+			"dependsOn": ["^build"],
+			"inputs": ["production", "^production"]
 		}
 	},
 	"plugins": [
@@ -69,6 +74,14 @@
 				"buildTargetName": "build",
 				"serveTargetName": "serve",
 				"previewTargetName": "preview"
+			}
+		},
+		{
+			"plugin": "@nx/vitest",
+			"options": {
+				"testTargetName": "vitest:test",
+				"ciTargetName": "test-ci",
+				"testMode": "watch"
 			}
 		}
 	],
@@ -152,6 +165,11 @@
 		},
 		"@schematics/angular:resolver": {
 			"typeSeparator": "."
+		}
+	},
+	"release": {
+		"version": {
+			"preVersionCommand": "pnpm dlx nx run-many -t build"
 		}
 	}
 }

@@ -59,8 +59,8 @@ export class LoginComponent {
 	public readonly isLoading = toSignal(this.appService.isLoading$, { initialValue: false });
 
 	public readonly form = form(this.loginModel, (schema) => {
-		required(schema.username);
-		required(schema.password);
+		required(schema.username, { when: ({ stateOf }) => stateOf(schema.username).touched() === true });
+		required(schema.password, { when: ({ stateOf }) => stateOf(schema.password).touched() === true });
 	});
 
 	public readonly wrongCredentials = toSignal(

@@ -1,3 +1,5 @@
+import { TuiDay, TuiTime } from '@taiga-ui/cdk';
+
 export interface IRecordDto {
 	uuid?: string;
 	id: string;
@@ -17,6 +19,8 @@ export interface IRecord {
 	to: string;
 	specialty: Specialty;
 }
+
+export type TRecordForm = Omit<IRecord, 'arrival' | 'leaving'> & { arrival: [TuiDay, TuiTime]; leaving: [TuiDay, TuiTime] | null };
 
 export const SPECIALTIES = [
 	'internal',

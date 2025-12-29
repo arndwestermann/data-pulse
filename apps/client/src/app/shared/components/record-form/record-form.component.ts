@@ -1,19 +1,18 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, resource, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { TuiButton, TuiDialogContext, TuiError, TuiTextfield } from '@taiga-ui/core';
 
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { TuiAutoFocus, TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { TuiChevron, TuiComboBox, TuiDataListWrapper, TuiFilterByInputPipe, TuiInputDateTime, TuiStringifyContentPipe } from '@taiga-ui/kit';
-import { IRecordForm } from '../../models/record-form.model';
 import { RecordService } from '../../services';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { IRecord, SPECIALTIES, Specialty } from '../../models';
-import { idExitsValidator } from './id-exists.validator';
+import { IRecord, SPECIALTIES, Specialty, TRecordForm } from '../../models';
+import { customError, debounce, Field, form, required, submit, validateAsync } from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
 
-const angularImports = [ReactiveFormsModule, NgTemplateOutlet];
+const angularImports = [ReactiveFormsModule, NgTemplateOutlet, Field];
 const thirdPartyImports = [TranslocoDirective];
 const taigaUiImports = [
 	TuiButton,
@@ -32,63 +31,70 @@ const taigaUiImports = [
 	selector: 'dp-record-form',
 	imports: [...angularImports, ...thirdPartyImports, ...taigaUiImports],
 	template: `
-		<form class="flex flex-col gap-2" [formGroup]="form" *transloco="let transloco">
+		<form class="flex flex-col gap-2" *transloco="let transloco">
 			<div class="w-full">
-				<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'id', type: 'text', autoFocus: true }" />
-				@if (form.controls.id.hasError('idExists')) {
-					<tui-error [error]="transloco('validation.idExists')" />
-				}
+				<ng-container *ngTemplateOutlet="inputTemplate; context: { label: 'id', control: form.id, type: 'text', autoFocus: true }" />
 			</div>
 			<div class="flex gap-2">
 				<div class="w-1/2">
-					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'arrival', type: 'datetime' }" />
+					<ng-container *ngTemplateOutlet="inputTemplate; context: { label: 'arrival', control: form.arrival, type: 'datetime' }" />
 				</div>
 				<div class="w-1/2">
-					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'leaving', type: 'datetime' }" />
+					<ng-container *ngTemplateOutlet="inputTemplate; context: { label: 'leaving', control: form.leaving, type: 'datetime' }" />
 				</div>
 			</div>
 			<div class="flex gap-2">
 				<div class="w-1/2">
-					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'from', type: 'text' }" />
+					<ng-container *ngTemplateOutlet="inputTemplate; context: { label: 'from', control: form.from, type: 'text' }" />
 				</div>
 				<div class="w-1/2">
-					<ng-container *ngTemplateOutlet="inputTemplate; context: { formControlName: 'to', type: 'date' }" />
+					<ng-container *ngTemplateOutlet="inputTemplate; context: { label: 'to', control: form.to, type: 'text' }" />
 				</div>
 			</div>
 
-			<ng-container *ngTemplateOutlet="dropdownTemplate; context: { formControlName: 'specialty', array: specialties() }" />
+			<ng-container *ngTemplateOutlet="dropdownTemplate; context: { label: 'specialty', control: specialtyControl, array: specialties() }" />
 
-			<button tuiButton class="w-full" type="button" size="m" [disabled]="form.invalid" (click)="save()">
+			<button tuiButton class="w-full" type="button" size="m" [disabled]="form().invalid() || specialtyControl.invalid" (click)="save()">
 				<span class="mr-2 font-normal">{{ transloco('general.save') }}</span>
 			</button>
 
-			<ng-template let-formControlName="formControlName" let-type="type" let-autoFocus="autoFocus" #inputTemplate>
+			<ng-template let-label="label" let-control="control" let-type="type" let-autoFocus="autoFocus" #inputTemplate>
 				@switch (type) {
 					@case ('datetime') {
 						<tui-textfield [tuiTextfieldCleaner]="true">
-							<label tuiLabel> {{ transloco('records.' + formControlName) }}</label>
+							<label tuiLabel> {{ transloco('records.' + label) }}</label>
 							<input
 								tuiInputDateTime
-								[formControlName]="formControlName"
+								[field]="control"
 								[tuiAutoFocus]="autoFocus ?? false"
-								[min]="formControlName === 'arrival' ? null : minDate()"
+								[min]="label === 'arrival' ? null : minDate()"
 								(focus)="onFocused($event)" />
+							@for (error of control().errors(); track error.kind) {
+								<tui-error [error]="transloco('validation.' + error.kind)" />
+							}
 							<tui-calendar *tuiTextfieldDropdown />
 						</tui-textfield>
 					}
 					@default {
 						<tui-textfield>
-							<label tuiLabel> {{ transloco('records.' + formControlName) }}</label>
-							<input tuiTextfield [tuiAutoFocus]="autoFocus ?? false" [formControlName]="formControlName" type="text" (keypress)="keyPress($event)" />
+							<label tuiLabel> {{ transloco('records.' + label) }}</label>
+							<input tuiTextfield [tuiAutoFocus]="autoFocus ?? false" [field]="control" type="text" (keypress)="keyPress($event)" />
+							@for (error of control().errors(); track error.kind) {
+								<tui-error [error]="transloco('validation.' + error.kind)" />
+							}
 						</tui-textfield>
 					}
 				}
 			</ng-template>
 
-			<ng-template let-formControlName="formControlName" let-array="array" #dropdownTemplate>
+			<ng-template let-label="label" let-control="control" let-array="array" #dropdownTemplate>
 				<tui-textfield tuiChevron [stringify]="stringifySpecialty">
-					<label tuiLabel> {{ transloco('records.' + formControlName) }}</label>
-					<input tuiComboBox [formControlName]="formControlName" (keypress)="keyPress($event)" />
+					<label tuiLabel> {{ transloco('records.' + label) }}</label>
+					<input tuiComboBox [formControl]="control" (keypress)="keyPress($event)" />
+
+					@if (control.hasError('required')) {
+						<tui-error [error]="transloco('validation.required')" />
+					}
 
 					<tui-data-list-wrapper
 						*tuiTextfieldDropdown
@@ -104,6 +110,11 @@ const taigaUiImports = [
 
 		:host {
 			@apply block;
+
+			.ng-invalid,
+			.ng-invalid:focus {
+				outline-color: var(--tui-status-negative);
+			}
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -115,36 +126,75 @@ export class RecordFormComponent {
 	public readonly context = inject<TuiDialogContext<IRecord, IRecord | null>>(POLYMORPHEUS_CONTEXT);
 	public readonly specialties = signal(SPECIALTIES);
 
-	public readonly form = new FormGroup<IRecordForm>({
-		uuid: new FormControl<string | null>(this.context.data?.uuid ?? null),
-		id: new FormControl<string>(this.context.data?.id ?? '', {
-			nonNullable: true,
-			validators: [Validators.required],
-			asyncValidators: this.context.data?.id ? [] : [idExitsValidator(this.recordsService)],
-			updateOn: this.context.data?.id ? 'change' : 'blur',
-		}),
-		arrival: new FormControl<[TuiDay, TuiTime]>(this.getTuiDayTime(this.context.data?.arrival ?? new Date()), {
-			nonNullable: true,
-		}),
-		leaving: new FormControl<[TuiDay, TuiTime] | null>(this.context.data?.leaving ? this.getTuiDayTime(this.context.data.leaving) : null),
-		from: new FormControl<string>(this.context.data?.from ?? '', { nonNullable: true }),
-		to: new FormControl<string>(this.context.data?.to ?? '', { nonNullable: true }),
-		specialty: new FormControl<Specialty>(this.context.data?.specialty ?? 'internal', { nonNullable: true }),
+	public readonly recordModel = signal<TRecordForm>({
+		uuid: this.context.data?.uuid,
+		id: this.context.data?.id ?? '',
+		arrival: this.getTuiDayTime(this.context.data?.arrival ?? new Date()),
+		leaving: this.context.data?.leaving ? this.getTuiDayTime(this.context.data.leaving) : null,
+		from: this.context.data?.from ?? '',
+		to: this.context.data?.to ?? '',
+		specialty: this.context.data?.specialty ?? 'internal',
 	});
 
-	public readonly minDate = toSignal(this.form.controls.arrival.valueChanges.pipe(), { initialValue: this.form.controls.arrival.value });
+	public readonly form = form(this.recordModel, (schema) => {
+		required(schema.id);
+		debounce(schema.id, 500);
+
+		required(schema.arrival);
+
+		validateAsync(schema.id, {
+			params: ({ value }) => {
+				const val = value();
+				if (!val) return undefined;
+				return val;
+			},
+			factory: (id) =>
+				resource({
+					params: id,
+					loader: async ({ params: id }) => {
+						const available = await firstValueFrom(this.recordsService.getByRecordsId(id));
+						return available === null;
+					},
+				}),
+			onSuccess: (result: boolean) => {
+				if (!result) {
+					return customError({
+						kind: 'idExists',
+					});
+				}
+				return null;
+			},
+			onError: (error: unknown) => {
+				console.error('Validation error:', error);
+				return null;
+			},
+		});
+	});
+
+	// NOTE: Temp fix until tuiComboBox works with signal forms
+	public readonly specialtyControl = new FormControl<Specialty>(this.context.data?.specialty ?? 'internal', {
+		nonNullable: true,
+		validators: [Validators.required],
+	});
+
+	public readonly minDate = computed(() => this.recordModel().arrival);
 
 	public save(): void {
-		const value = this.form.getRawValue();
-		const uuid = value.uuid;
-		const arrival = this.toNativeDateTime(value.arrival[0], value.arrival[1]);
-		const leaving = value.leaving ? this.toNativeDateTime(value.leaving[0], value.leaving[1]) : undefined;
+		if (this.specialtyControl.invalid) return;
 
-		this.context.completeWith({
-			...value,
-			uuid: uuid ?? undefined,
-			arrival,
-			leaving,
+		submit(this.form, async (value) => {
+			const raw = value().value();
+			const uuid = raw.uuid;
+			const arrival = this.toNativeDateTime(raw.arrival[0], raw.arrival[1]);
+			const leaving = raw.leaving ? this.toNativeDateTime(raw.leaving[0], raw.leaving[1]) : undefined;
+			const specialty = this.specialtyControl.value;
+			this.context.completeWith({
+				...raw,
+				uuid: uuid ?? undefined,
+				arrival,
+				leaving,
+				specialty,
+			});
 		});
 	}
 

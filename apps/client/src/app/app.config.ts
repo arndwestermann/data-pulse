@@ -15,6 +15,8 @@ import localeDeDE from '@angular/common/locales/de';
 import { STORAGE_TOKEN } from './shared/services';
 import { accessTokenInterceptor, LOADING_INTERCEPTOR_PROVIDER } from './shared/interceptors';
 import { distinctUntilChanged, map } from 'rxjs';
+import { provideSignalFormsConfig } from '@angular/forms/signals';
+import { NG_STATUS_CLASSES } from '@angular/forms/signals/compat';
 
 registerLocaleData(localeEnGB, 'en-GB');
 registerLocaleData(localeDeDE, 'de-DE');
@@ -27,6 +29,9 @@ export const appConfig: ApplicationConfig = {
 	providers: [
 		provideAnimations(),
 		provideZonelessChangeDetection(),
+		provideSignalFormsConfig({
+			classes: NG_STATUS_CLASSES,
+		}),
 		provideRouter(appRoutes),
 		provideHttpClient(withInterceptorsFromDi(), withInterceptors([accessTokenInterceptor])),
 		provideTransloco({

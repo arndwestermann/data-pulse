@@ -2,13 +2,11 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { NgTemplateOutlet } from '@angular/common';
 import { TuiButton, TuiDialogContext, TuiError, TuiTextfield } from '@taiga-ui/core';
 
-import { TuiSelectModule, TuiTextfieldControllerModule, TuiInputDateTimeModule, TuiComboBoxModule } from '@taiga-ui/legacy';
-
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { TuiAutoFocus, TuiDay, TuiTime } from '@taiga-ui/cdk';
-import { TuiDataListWrapper, TuiFilterByInputPipe, TuiStringifyContentPipe } from '@taiga-ui/kit';
+import { TuiChevron, TuiComboBox, TuiDataListWrapper, TuiFilterByInputPipe, TuiInputDateTime, TuiStringifyContentPipe } from '@taiga-ui/kit';
 import { IRecordForm } from '../../models/record-form.model';
 import { RecordService } from '../../services';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -19,16 +17,15 @@ const angularImports = [ReactiveFormsModule, NgTemplateOutlet];
 const thirdPartyImports = [TranslocoDirective];
 const taigaUiImports = [
 	TuiButton,
-	TuiSelectModule,
 	TuiDataListWrapper,
-	TuiTextfieldControllerModule,
 	TuiTextfield,
-	TuiInputDateTimeModule,
+	TuiInputDateTime,
 	TuiFilterByInputPipe,
 	TuiStringifyContentPipe,
-	TuiComboBoxModule,
+	TuiComboBox,
 	TuiAutoFocus,
 	TuiError,
+	TuiChevron,
 ];
 
 @Component({
@@ -65,42 +62,40 @@ const taigaUiImports = [
 				<span class="mr-2 font-normal">{{ transloco('general.save') }}</span>
 			</button>
 
-			<ng-template let-formControlName="formControlName" let-type="type" let-array="array" let-autoFocus="autoFocus" #inputTemplate>
-				<label>
-					{{ transloco('records.' + formControlName) }}
-					@switch (type) {
-						@case ('datetime') {
-							<tui-input-date-time
-								[tuiAutoFocus]="autoFocus ?? false"
+			<ng-template let-formControlName="formControlName" let-type="type" let-autoFocus="autoFocus" #inputTemplate>
+				@switch (type) {
+					@case ('datetime') {
+						<tui-textfield [tuiTextfieldCleaner]="true">
+							<label tuiLabel> {{ transloco('records.' + formControlName) }}</label>
+							<input
+								tuiInputDateTime
 								[formControlName]="formControlName"
+								[tuiAutoFocus]="autoFocus ?? false"
 								[min]="formControlName === 'arrival' ? null : minDate()"
-								[tuiTextfieldLabelOutside]="true"
-								[tuiTextfieldCleaner]="true">
-								<input tuiTextfieldLegacy (focus)="onFocused($event)" />
-							</tui-input-date-time>
-						}
-						@default {
-							<tui-textfield>
-								<input
-									tuiTextfield
-									[tuiAutoFocus]="autoFocus ?? false"
-									[formControlName]="formControlName"
-									type="text"
-									(keypress)="keyPress($event)" />
-							</tui-textfield>
-						}
+								(focus)="onFocused($event)" />
+							<tui-calendar *tuiTextfieldDropdown />
+						</tui-textfield>
 					}
-				</label>
+					@default {
+						<tui-textfield>
+							<label tuiLabel> {{ transloco('records.' + formControlName) }}</label>
+							<input tuiTextfield [tuiAutoFocus]="autoFocus ?? false" [formControlName]="formControlName" type="text" (keypress)="keyPress($event)" />
+						</tui-textfield>
+					}
+				}
 			</ng-template>
 
 			<ng-template let-formControlName="formControlName" let-array="array" #dropdownTemplate>
-				<label>
-					{{ transloco('records.' + formControlName) }}
-					<tui-combo-box [formControlName]="formControlName" [stringify]="stringifySpecialty" [tuiTextfieldLabelOutside]="true">
-						<input tuiTextfieldLegacy (keypress)="keyPress($event)" />
-						<tui-data-list-wrapper *tuiDataList [items]="array | tuiFilterByInput" [itemContent]="stringifySpecialty | tuiStringifyContent" />
-					</tui-combo-box>
-				</label>
+				<tui-textfield tuiChevron [stringify]="stringifySpecialty">
+					<label tuiLabel> {{ transloco('records.' + formControlName) }}</label>
+					<input tuiComboBox [formControlName]="formControlName" (keypress)="keyPress($event)" />
+
+					<tui-data-list-wrapper
+						*tuiTextfieldDropdown
+						new
+						[items]="array | tuiFilterByInput"
+						[itemContent]="stringifySpecialty | tuiStringifyContent" />
+				</tui-textfield>
 			</ng-template>
 		</form>
 	`,

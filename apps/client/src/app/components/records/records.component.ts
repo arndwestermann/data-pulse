@@ -19,6 +19,7 @@ import {
 	TuiIcon,
 	TuiScrollable,
 	TuiScrollbar,
+	tuiScrollbarOptionsProvider,
 	TuiTextfield,
 } from '@taiga-ui/core';
 import { TuiTable, TuiTableTr } from '@taiga-ui/addon-table';
@@ -38,14 +39,13 @@ import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-dele
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AppService, RecordService, UserService } from '../../shared/services';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TuiCheckbox, TuiDataListDropdownManager, TuiDataListWrapper } from '@taiga-ui/kit';
-import { TuiInputDateTimeModule, TuiInputTagModule, tuiInputTagOptionsProvider, TuiTextfieldControllerModule } from '@taiga-ui/legacy';
+import { TuiCheckbox, TuiDataListDropdownManager, TuiDataListWrapper, TuiFilterByInputPipe, TuiInputChip, TuiInputDateTime } from '@taiga-ui/kit';
 import { TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { isEqual, isSameDay } from 'date-fns';
-import { FilterSpecialtiesPipe, GetStatusPipe, MarkedAsCorrectPipe } from './pipes';
+import { GetStatusPipe, MarkedAsCorrectPipe } from './pipes';
 
 const angularImports = [FormsModule, ReactiveFormsModule, DatePipe, CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport];
-const firstPartyImports = [FilterSpecialtiesPipe, GetStatusPipe, MarkedAsCorrectPipe];
+const firstPartyImports = [GetStatusPipe, MarkedAsCorrectPipe];
 const taigaUiImports = [
 	TuiButton,
 	TuiIcon,
@@ -53,15 +53,15 @@ const taigaUiImports = [
 	TuiHint,
 	TuiCheckbox,
 	TuiTextfield,
-	TuiInputDateTimeModule,
-	TuiTextfieldControllerModule,
-	TuiInputTagModule,
+	TuiInputDateTime,
+	TuiInputChip,
 	TuiDataListWrapper,
 	TuiScrollable,
 	TuiScrollbar,
 	TuiDropdown,
 	TuiDataList,
 	TuiDataListDropdownManager,
+	TuiFilterByInputPipe,
 ];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
@@ -106,7 +106,7 @@ const thirdPartyImports = [TranslocoDirective];
 				</button>
 			}
 		</div>
-		<tui-scrollbar class="grow" [hidden]="true">
+		<tui-scrollbar class="grow">
 			<cdk-virtual-scroll-viewport
 				#viewport
 				tuiScrollable
@@ -145,20 +145,18 @@ const thirdPartyImports = [TranslocoDirective];
 								} @else {
 									<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true">
 										@if (column === 'arrival' || column === 'leaving') {
-											<tui-input-date-time [formControlName]="column" [tuiTextfieldLabelOutside]="true" [tuiTextfieldCleaner]="true">
-												<input tuiTextfieldLegacy placeholder="04.09.1971" />
-											</tui-input-date-time>
+											<tui-textfield [tuiTextfieldCleaner]="true">
+												<label tuiLabel> {{ transloco(column) }}</label>
+												<input tuiInputDateTime placeholder="04.09.1971" [formControlName]="column" />
+												<tui-calendar *tuiTextfieldDropdown />
+											</tui-textfield>
 										} @else if (column === 'specialty') {
-											<tui-input-tag
-												name="specialty"
-												[formControlName]="column"
-												tuiTextfieldSize="m"
-												[rows]="1"
-												(searchChange)="onInputTagSearchChanged($event)"
-												[tuiTextfieldLabelOutside]="filterForm.controls.specialty.value.length > 0">
-												{{ transloco(column) }}
-												<tui-data-list-wrapper *tuiDataList [items]="mappedSpecialties() | filterSpecialties: filterForm.controls.specialty.value" />
-											</tui-input-tag>
+											<tui-textfield #input multi [rows]="1" [disabledItemHandler]="disableNewTag">
+												<input tuiInputChip [placeholder]="transloco(column)" [formControlName]="column" />
+												<tui-input-chip *tuiItem appearance="primary" />
+
+												<tui-data-list-wrapper *tuiTextfieldDropdown new [items]="mappedSpecialties() | tuiFilterByInput" />
+											</tui-textfield>
 										} @else {
 											<tui-textfield tuiTextfieldAppearance="search">
 												<input tuiTextfield type="text" [formControlName]="column" [placeholder]="transloco(column)" />
@@ -222,11 +220,11 @@ const thirdPartyImports = [TranslocoDirective];
 									<tui-data-list role="menu" tuiDataListDropdownManager *transloco="let transloco; prefix: 'general'">
 										@if (status !== null) {
 											@if (isMarkedAsCorrect) {
-												<button tuiOption type="button" (click)="onConetextButtonClick(dropdown, 'markAsIncorrect', item)">
+												<button tuiOption new type="button" (click)="onConetextButtonClick(dropdown, 'markAsIncorrect', item)">
 													{{ transloco('markAsIncorrect') }} <tui-icon icon="@tui.fa.solid.xmark" class="ml-2 w-4 text-red-500" />
 												</button>
 											} @else {
-												<button tuiOption type="button" (click)="onConetextButtonClick(dropdown, 'markAsCorrect', item)">
+												<button tuiOption new type="button" (click)="onConetextButtonClick(dropdown, 'markAsCorrect', item)">
 													{{ transloco('markAsCorrect') }} <tui-icon icon="@tui.fa.solid.check" class="ml-2 w-4 text-green-500" />
 												</button>
 											}
@@ -235,11 +233,11 @@ const thirdPartyImports = [TranslocoDirective];
 										@let isSelected = selections.isSelected(item);
 										@let icon = '@tui.fa.' + (isSelected ? 'regular' : 'solid') + '.square-check';
 
-										<button tuiOption type="button" (pointerdown)="onConetextButtonClick(dropdown, 'select', item)">
+										<button tuiOption new type="button" (pointerdown)="onConetextButtonClick(dropdown, 'select', item)">
 											{{ transloco(isSelected ? 'unselect' : 'select') }} <tui-icon [icon]="icon" class="ml-2 w-4 text-blue-500" />
 										</button>
 
-										<button tuiOption type="button" (pointerdown)="onConetextButtonClick(dropdown, 'delete', item)">
+										<button tuiOption new type="button" (pointerdown)="onConetextButtonClick(dropdown, 'delete', item)">
 											{{ transloco('delete') }} <tui-icon icon="@tui.fa.solid.trash" class="ml-2 w-4 text-red-500" />
 										</button>
 									</tui-data-list>
@@ -302,11 +300,7 @@ const thirdPartyImports = [TranslocoDirective];
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	providers: [
-		tuiInputTagOptionsProvider({
-			tagStatus: 'primary',
-		}),
-	],
+	providers: [tuiScrollbarOptionsProvider({ mode: 'hidden' })],
 })
 export class RecordsComponent implements AfterViewInit {
 	private readonly appService = inject(AppService);
@@ -329,8 +323,6 @@ export class RecordsComponent implements AfterViewInit {
 
 	private readonly records = toSignal(this.recordService.records$, { initialValue: [] });
 
-	private readonly specialtyFilter = signal<string>('');
-
 	private readonly specialtyTranslations$ = of(SPECIALTIES.map((specialty) => specialty as string)).pipe(
 		switchMap((specialties) => {
 			const translations$ = specialties.map((specialty) =>
@@ -343,13 +335,6 @@ export class RecordsComponent implements AfterViewInit {
 
 	private readonly specialties = toSignal(this.specialtyTranslations$, { initialValue: [] });
 
-	private readonly filteredSpecialties = computed(() => {
-		const filter = this.specialtyFilter();
-		if (!filter) return this.specialties();
-
-		return this.specialties().filter((specialty) => specialty.value.toLowerCase().includes(filter.toLowerCase()));
-	});
-
 	private readonly scrollContainer = viewChild.required<CdkVirtualScrollViewport>('viewport');
 	private readonly rows = viewChildren<TuiTableTr<IRecord>, ElementRef>('row', { read: ElementRef });
 
@@ -359,7 +344,11 @@ export class RecordsComponent implements AfterViewInit {
 
 	public readonly scrollPosition = toSignal(this.scrollPosition$, { initialValue: 'top' });
 
-	public readonly mappedSpecialties = computed(() => this.filteredSpecialties().map((specialty) => specialty.value));
+	public readonly mappedSpecialties = computed(() => this.specialties().map((specialty) => specialty.value));
+
+	// TODO: Fix adding items to input chip
+	protected readonly disableNewTag = (item: string): boolean =>
+		!this.mappedSpecialties().find((specialty) => specialty.toLowerCase().includes(item.toLowerCase()));
 
 	public readonly filterForm = new FormGroup({
 		id: new FormControl<string | null>(null),
@@ -481,10 +470,6 @@ export class RecordsComponent implements AfterViewInit {
 	public selectAll(selectAll: boolean): void {
 		if (selectAll) this.selections.select(...this.sortedData());
 		else this.selections.clear();
-	}
-
-	public onInputTagSearchChanged(search: string): void {
-		this.specialtyFilter.update(() => search);
 	}
 
 	public scrollTo(direction: 'top' | 'bottom'): void {

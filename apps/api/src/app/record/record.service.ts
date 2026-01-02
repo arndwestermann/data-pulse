@@ -6,7 +6,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { from, map, Observable, of, switchMap } from 'rxjs';
 import { UserService } from '../user/user.service';
-import { applyDynamicFilters, DEFAULT_ORDER, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IError, QueryOptions } from '@arndwestermann/common';
+import { applyDynamicFilters, DEFAULT_ORDER, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IError } from '@arndwestermann/common';
+import { QueryOptions } from '../shared/models';
 
 @Injectable()
 export class RecordService {

@@ -26,7 +26,8 @@ import { mapRecordToResponse } from '../shared';
 import { Response } from 'express';
 import { AuthorizationGuard } from '../role/guards/authorization.guard';
 import { Permission } from '../shared/decorators';
-import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IPage, QueryOptions, isError } from '@arndwestermann/common';
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IPage, isError } from '@arndwestermann/common';
+import { QueryOptions } from '../shared/models';
 
 @UseGuards(AuthorizationGuard)
 @Controller('record')

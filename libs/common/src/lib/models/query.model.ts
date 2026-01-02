@@ -9,7 +9,16 @@ export interface FilterCondition {
 
 export type FilterInput = unknown | FilterCondition;
 
-export class IQueryOptions {
+export interface IQueryOptions {
+	page?: number;
+	size?: number;
+	search?: string;
+	filters?: Record<string, FilterInput>;
+	order?: 'asc' | 'desc';
+	orderBy?: string;
+}
+
+export class QueryOptions implements IQueryOptions {
 	@IsNumber()
 	@IsPositive()
 	@IsOptional()

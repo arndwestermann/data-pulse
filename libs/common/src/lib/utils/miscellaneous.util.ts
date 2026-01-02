@@ -61,3 +61,7 @@ export function notNullish<T>(value: T | null | undefined): value is T {
 export function isError<T>(object: T | IError): object is IError {
 	return object !== null && object !== undefined && typeof object === 'object' && 'error' in object;
 }
+
+export function isFilterCondition<T>(object: T | FilterCondition): object is FilterCondition {
+	return object !== null && object !== undefined && typeof object === 'object' && 'operator' in object;
+}

@@ -3,6 +3,7 @@ import { parseDateString } from '../parse-date-string/parse-date-string.util';
 import { FilterCondition } from '../../models/query.model';
 import { TOperator } from '../../models/operator.model';
 import { DATE_FORMATS } from '../../models/constants';
+import { isFilterCondition } from '../miscellaneous.util';
 
 export function applyDynamicFilters<T extends ObjectLiteral>(
 	qb: SelectQueryBuilder<T>,
@@ -167,10 +168,6 @@ function processFilter(
 	}
 
 	return { conditions, parameters, paramCounter };
-}
-
-function isFilterCondition<T>(object: T | FilterCondition): object is FilterCondition {
-	return object !== null && object !== undefined && typeof object === 'object' && 'operator' in object;
 }
 
 function normalizeFilterInput(input: unknown): FilterCondition {

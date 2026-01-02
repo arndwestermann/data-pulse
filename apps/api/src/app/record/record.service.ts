@@ -6,7 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { from, map, Observable, of, switchMap } from 'rxjs';
 import { UserService } from '../user/user.service';
-import { applyDynamicFilters, DEFAULT_ORDER, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IError, IQueryOptions } from '@arndwestermann/common';
+import { applyDynamicFilters, DEFAULT_ORDER, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IError, QueryOptions } from '@arndwestermann/common';
 
 @Injectable()
 export class RecordService {
@@ -49,7 +49,7 @@ export class RecordService {
 
 	public findAllV2(
 		userId: string,
-		{ page = DEFAULT_PAGE, size = DEFAULT_PAGE_SIZE, order = DEFAULT_ORDER, filters }: IQueryOptions,
+		{ page = DEFAULT_PAGE, size = DEFAULT_PAGE_SIZE, order = DEFAULT_ORDER, filters }: QueryOptions,
 	): Observable<{ data: Record[]; count: number } | IError> {
 		const offset = (page - 1) * size;
 		const direction = order.toUpperCase() as 'ASC' | 'DESC';

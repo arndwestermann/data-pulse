@@ -26,7 +26,7 @@ import { mapRecordToResponse } from '../shared';
 import { Response } from 'express';
 import { AuthorizationGuard } from '../role/guards/authorization.guard';
 import { Permission } from '../shared/decorators';
-import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IPage, IQueryOptions, isError } from '@arndwestermann/common';
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IPage, QueryOptions, isError } from '@arndwestermann/common';
 
 @UseGuards(AuthorizationGuard)
 @Controller('record')
@@ -55,7 +55,7 @@ export class RecordController {
 	@Version('beta')
 	@Permission({ ressource: 'record', actions: ['read'] })
 	@Get()
-	findAllV2(@Res() response: Response<IPage<IRecordResponse[]>>, @Query() options: IQueryOptions, @User() user: TokenPayload) {
+	findAllV2(@Res() response: Response<IPage<IRecordResponse[]>>, @Query() options: QueryOptions, @User() user: TokenPayload) {
 		return this.recordService.findAllV2(user.sub, options).pipe(
 			map((value) => {
 				if (!isError(value)) {

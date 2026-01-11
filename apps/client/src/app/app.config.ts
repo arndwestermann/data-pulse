@@ -1,7 +1,7 @@
 import { ApplicationConfig, isDevMode, importProvidersFrom, inject, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { appRoutes } from './app.routes';
 import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 import { TranslocoHttpLoader } from './transloco-loader';
@@ -32,7 +32,7 @@ export const appConfig: ApplicationConfig = {
 		provideSignalFormsConfig({
 			classes: NG_STATUS_CLASSES,
 		}),
-		provideRouter(appRoutes),
+		provideRouter(appRoutes, withComponentInputBinding()),
 		provideHttpClient(withInterceptorsFromDi(), withInterceptors([accessTokenInterceptor])),
 		provideTransloco({
 			config: {

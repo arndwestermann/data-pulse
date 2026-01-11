@@ -1,15 +1,4 @@
-import {
-	AfterViewInit,
-	ChangeDetectionStrategy,
-	Component,
-	computed,
-	DestroyRef,
-	ElementRef,
-	inject,
-	signal,
-	viewChild,
-	viewChildren,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import {
 	TuiButton,
 	TuiDataList,
@@ -17,34 +6,58 @@ import {
 	TuiDropdownDirective,
 	TuiHint,
 	TuiIcon,
-	TuiScrollable,
 	TuiScrollbar,
 	tuiScrollbarOptionsProvider,
 	TuiTextfield,
 } from '@taiga-ui/core';
-import { TuiTable, TuiTableTr } from '@taiga-ui/addon-table';
+import { TuiTable } from '@taiga-ui/addon-table';
 import { DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
-import { CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
 
-import { IRecord, SPECIALTIES, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY } from '../../shared/models';
-import { fromCache } from '../../shared/utils';
+import { IRecord, SPECIALTIES, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY, DEFAULT_FIELDS } from '../../shared/models';
+import { fromCache, toTuiDayTime, toNativeDateTime, toTuiMonth } from '../../shared/utils';
 
-import { combineLatest, debounceTime, filter, map, of, Subject, switchMap, take, tap } from 'rxjs';
+import { combineLatest, map, of, switchMap } from 'rxjs';
 
 import { RecordFormComponent } from '../../shared/components';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { AppService, RecordService, UserService } from '../../shared/services';
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { TuiCheckbox, TuiDataListDropdownManager, TuiDataListWrapper, TuiFilterByInputPipe, TuiInputChip, TuiInputDateTime } from '@taiga-ui/kit';
-import { TuiDay, TuiTime } from '@taiga-ui/cdk';
-import { isEqual, isSameDay } from 'date-fns';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+	TuiCheckbox,
+	TuiDataListDropdownManager,
+	TuiDataListWrapper,
+	TuiFilterByInputPipe,
+	TuiHideSelectedPipe,
+	TuiInputChip,
+	TuiInputDateTime,
+	TuiInputMonth,
+	TuiPagination,
+} from '@taiga-ui/kit';
+import { TuiDay, TuiMonth, TuiTime } from '@taiga-ui/cdk';
 import { GetStatusPipe, MarkedAsCorrectPipe } from './pipes';
+import { ActivatedRoute, Router } from '@angular/router';
+import { parse as parseQueryParams, stringify as stringifyQueryParams } from 'qs';
+import {
+	DEFAULT_ORDER,
+	DEFAULT_PAGE,
+	DEFAULT_PAGE_SIZE,
+	FilterCondition,
+	FilterInput,
+	formatDateString,
+	IField,
+	IQueryOptions,
+	isFilterCondition,
+	parseDateString,
+} from '@arndwestermann/common';
+import { Field } from '@angular/forms/signals';
+import { compatForm } from '@angular/forms/signals/compat';
+import { endOfMonth, startOfMonth } from 'date-fns';
 
-const angularImports = [FormsModule, ReactiveFormsModule, DatePipe, CdkFixedSizeVirtualScroll, CdkVirtualForOf, CdkVirtualScrollViewport];
+const angularImports = [FormsModule, ReactiveFormsModule, DatePipe, Field];
 const firstPartyImports = [GetStatusPipe, MarkedAsCorrectPipe];
 const taigaUiImports = [
 	TuiButton,
@@ -56,110 +69,122 @@ const taigaUiImports = [
 	TuiInputDateTime,
 	TuiInputChip,
 	TuiDataListWrapper,
-	TuiScrollable,
 	TuiScrollbar,
 	TuiDropdown,
 	TuiDataList,
 	TuiDataListDropdownManager,
 	TuiFilterByInputPipe,
+	TuiPagination,
+	TuiHideSelectedPipe,
+	TuiInputMonth,
 ];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
 	selector: 'dp-records',
 	imports: [...angularImports, ...taigaUiImports, ...firstPartyImports, ...thirdPartyImports],
 	template: `
-		<div class="flex shrink-0 gap-2" *transloco="let transloco; prefix: 'general'">
-			<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
-				<tui-icon icon="@tui.fa.solid.plus" />
-			</button>
-
-			@if (isAdmin()) {
-				<button type="button" tuiButton appearance="primary" size="s" (click)="fileInput.click()">
-					<tui-icon icon="@tui.fa.solid.upload" />
+		<ng-container *transloco="let transloco">
+			<div class="flex shrink-0 gap-2">
+				<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
+					<tui-icon icon="@tui.fa.solid.plus" />
 				</button>
-			}
 
-			<input #fileInput class="hidden" type="file" accept=".csv" [multiple]="false" (change)="importFile($event)" />
-			<button
-				type="button"
-				tuiButton
-				appearance="primary-destructive"
-				size="s"
-				(click)="deleteSelectedRecords(selections.selected)"
-				[tuiHint]="transloco('deleteSelected')">
-				<tui-icon icon="@tui.fa.solid.trash" />
-				@if (selections.selected.length > 0) {
-					<span>({{ selections.selected.length }})</span>
+				@if (isAdmin()) {
+					<button type="button" tuiButton appearance="primary" size="s" (click)="fileInput.click()">
+						<tui-icon icon="@tui.fa.solid.upload" />
+					</button>
 				}
-			</button>
-		</div>
-		<div class="absolute bottom-2 right-2 z-10 flex flex-col gap-2">
-			@if (!scrollPosition() || scrollPosition() === 'bottom') {
-				<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('top')">
-					<tui-icon icon="@tui.fa.solid.arrow-up" />
-				</button>
-			}
 
-			@if (!scrollPosition() || scrollPosition() === 'top') {
-				<button type="button" tuiButton appearance="primary" size="s" (click)="scrollTo('bottom')">
-					<tui-icon icon="@tui.fa.solid.arrow-down" />
+				<input #fileInput class="hidden" type="file" accept=".csv" [multiple]="false" (change)="importFile($event)" />
+				<button
+					type="button"
+					tuiButton
+					appearance="primary-destructive"
+					size="s"
+					(click)="deleteSelectedRecords(selections.selected)"
+					[tuiHint]="transloco('general.deleteSelected')">
+					<tui-icon icon="@tui.fa.solid.trash" />
+					@if (selections.selected.length > 0) {
+						<span>({{ selections.selected.length }})</span>
+					}
 				</button>
-			}
-		</div>
-		<tui-scrollbar class="grow">
-			<cdk-virtual-scroll-viewport
-				#viewport
-				tuiScrollable
-				appendOnly
-				class="[block-size:76rem]"
-				[itemSize]="57"
-				[maxBufferPx]="500"
-				[minBufferPx]="400">
+
+				<tui-textfield tuiTextfieldSize="s" class="w-40">
+					<input
+						[placeholder]="transloco('records.arrival')"
+						tuiInputMonth
+						[ngModel]="form.arrivalRange().value()"
+						(ngModelChange)="onArrivalRangeChange($event)" />
+
+					<tui-calendar-month *tuiTextfieldDropdown />
+				</tui-textfield>
+			</div>
+			<tui-scrollbar class="grow">
 				<table tuiTable class="w-full h-full" [columns]="columns()">
-					<thead *transloco="let transloco; prefix: 'records'">
+					<thead>
 						<tr tuiThGroup>
 							@for (column of columns(); track column) {
 								@if (column === 'select') {
-									<th *tuiHead="'select'" tuiTh [sorter]="null" [sticky]="true" [style.top.px]="-(viewport.getOffsetToRenderedContentStart() || 0)">
+									<th *tuiHead="'select'" tuiTh [sorter]="null" [sticky]="true">
 										<div class="flex justify-center">
 											<input
 												tuiCheckbox
 												type="checkbox"
 												id="header"
-												[ngModel]="sortedData().length > 0 && selections.selected.length === sortedData().length"
-												[indeterminate]="selections.selected.length > 0 && selections.selected.length < sortedData().length"
+												[ngModel]="records().length > 0 && selections.selected.length === records().length"
+												[indeterminate]="selections.selected.length > 0 && selections.selected.length < records().length"
 												(ngModelChange)="selectAll($event)" />
 										</div>
 									</th>
 								} @else {
-									<th *tuiHead="column" tuiTh [sorter]="null" [sticky]="true" [style.top.px]="-(viewport.getOffsetToRenderedContentStart() || 0)">
-										{{ transloco(column) }}
+									<th *tuiHead="column" tuiTh [sorter]="null" [sticky]="true">
+										{{ transloco('records.' + column) }}
 									</th>
 								}
 							}
 						</tr>
-						<tr tuiThGroup [formGroup]="filterForm">
+						<tr tuiThGroup>
 							@for (column of columns(); track column) {
 								@if (column === 'actions' || column === 'select') {
 									<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true"></th>
 								} @else {
 									<th *tuiHead="column" style="padding: 0;" tuiTh [sorter]="null" [sticky]="true">
 										@if (column === 'arrival' || column === 'leaving') {
+											@let dateControl = column === 'arrival' ? form.arrival : form.leaving;
 											<tui-textfield [tuiTextfieldCleaner]="true">
-												<label tuiLabel> {{ transloco(column) }}</label>
-												<input tuiInputDateTime placeholder="04.09.1971" [formControlName]="column" />
+												<label tuiLabel> {{ transloco('records.' + column) }}</label>
+												<input
+													tuiInputDateTime
+													placeholder="04.09.1971"
+													[field]="dateControl"
+													(keydown.enter)="onApplyFilter(column)"
+													(input)="onInputClear($event, column)" />
 												<tui-calendar *tuiTextfieldDropdown />
 											</tui-textfield>
 										} @else if (column === 'specialty') {
-											<tui-textfield #input multi [rows]="1" [disabledItemHandler]="disableNewTag">
-												<input tuiInputChip [placeholder]="transloco(column)" [formControlName]="column" />
+											<tui-textfield #input multi [rows]="1" [tuiTextfieldCleaner]="true" [disabledItemHandler]="disableNewTag">
+												<input
+													tuiInputChip
+													[placeholder]="transloco('records.' + column)"
+													[formControl]="form.specialty().control()"
+													(keydown.enter)="onApplyFilter(column)"
+													(input)="onInputClear($event, column)" />
+
 												<tui-input-chip *tuiItem appearance="primary" />
 
-												<tui-data-list-wrapper *tuiTextfieldDropdown new [items]="mappedSpecialties() | tuiFilterByInput" />
+												<tui-data-list-wrapper *tuiTextfieldDropdown new [items]="mappedSpecialties() | tuiHideSelected | tuiFilterByInput" />
 											</tui-textfield>
 										} @else {
-											<tui-textfield tuiTextfieldAppearance="search">
-												<input tuiTextfield type="text" [formControlName]="column" [placeholder]="transloco(column)" />
+											<tui-textfield tuiTextfieldAppearance="search" [tuiTextfieldCleaner]="true">
+												<!--TODO: Find better solution to dynamically access form fields-->
+												@let searchControl = $any(form)[column];
+												<input
+													tuiTextfield
+													type="text"
+													[field]="searchControl"
+													[placeholder]="transloco('records.' + column)"
+													(keydown.enter)="onApplyFilter($any(column))"
+													(input)="onInputClear($event, $any(column))" />
 											</tui-textfield>
 										}
 									</th>
@@ -167,8 +192,8 @@ const thirdPartyImports = [TranslocoDirective];
 							}
 						</tr>
 					</thead>
-					<tbody tuiTbody [data]="sortedData()" class="group" *transloco="let transloco; prefix: 'specialty'">
-						<ng-container *cdkVirtualFor="let item of sortedData()">
+					<tbody tuiTbody [data]="records()" class="group">
+						@for (item of records(); track item.uuid) {
 							@let isMarkedAsCorrect = item | markedAsCorrect: recordsMarkedAsCorrect();
 							@let status = item | getStatus;
 
@@ -196,7 +221,7 @@ const thirdPartyImports = [TranslocoDirective];
 									{{ item.to }}
 								</td>
 								<td *tuiCell="'specialty'" tuiTd>
-									{{ transloco(item.specialty) }}
+									{{ transloco('specialty.' + item.specialty) }}
 								</td>
 
 								<td *tuiCell="'actions'" tuiTd>
@@ -217,15 +242,15 @@ const thirdPartyImports = [TranslocoDirective];
 								</td>
 
 								<ng-template #contextMenu>
-									<tui-data-list role="menu" tuiDataListDropdownManager *transloco="let transloco; prefix: 'general'">
+									<tui-data-list role="menu" tuiDataListDropdownManager>
 										@if (status !== null) {
 											@if (isMarkedAsCorrect) {
 												<button tuiOption new type="button" (click)="onConetextButtonClick(dropdown, 'markAsIncorrect', item)">
-													{{ transloco('markAsIncorrect') }} <tui-icon icon="@tui.fa.solid.xmark" class="ml-2 w-4 text-red-500" />
+													{{ transloco('general.markAsIncorrect') }} <tui-icon icon="@tui.fa.solid.xmark" class="ml-2 w-4 text-red-500" />
 												</button>
 											} @else {
 												<button tuiOption new type="button" (click)="onConetextButtonClick(dropdown, 'markAsCorrect', item)">
-													{{ transloco('markAsCorrect') }} <tui-icon icon="@tui.fa.solid.check" class="ml-2 w-4 text-green-500" />
+													{{ transloco('general.markAsCorrect') }} <tui-icon icon="@tui.fa.solid.check" class="ml-2 w-4 text-green-500" />
 												</button>
 											}
 										}
@@ -234,20 +259,30 @@ const thirdPartyImports = [TranslocoDirective];
 										@let icon = '@tui.fa.' + (isSelected ? 'regular' : 'solid') + '.square-check';
 
 										<button tuiOption new type="button" (pointerdown)="onConetextButtonClick(dropdown, 'select', item)">
-											{{ transloco(isSelected ? 'unselect' : 'select') }} <tui-icon [icon]="icon" class="ml-2 w-4 text-blue-500" />
+											{{ transloco('general.' + isSelected ? 'unselect' : 'select') }} <tui-icon [icon]="icon" class="ml-2 w-4 text-blue-500" />
 										</button>
 
 										<button tuiOption new type="button" (pointerdown)="onConetextButtonClick(dropdown, 'delete', item)">
-											{{ transloco('delete') }} <tui-icon icon="@tui.fa.solid.trash" class="ml-2 w-4 text-red-500" />
+											{{ transloco('general.delete') }} <tui-icon icon="@tui.fa.solid.trash" class="ml-2 w-4 text-red-500" />
 										</button>
 									</tui-data-list>
 								</ng-template>
 							</tr>
-						</ng-container>
+						}
 					</tbody>
 				</table>
-			</cdk-virtual-scroll-viewport>
-		</tui-scrollbar>
+			</tui-scrollbar>
+
+			<div class="flex shrink-0 justify-center">
+				<tui-pagination
+					class="w-max bg-(--tui-background-base-alt) border rounded-lg px-2 py-1 z-10"
+					[length]="pages()"
+					[index]="page() - 1"
+					[activePadding]="3"
+					[sidePadding]="pages() > 9999 ? 0 : 1"
+					(indexChange)="navigateToPage($event + 1)" />
+			</div>
+		</ng-container>
 	`,
 	styles: `
 		@reference '../../../styles.css';
@@ -300,28 +335,33 @@ const thirdPartyImports = [TranslocoDirective];
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	providers: [tuiScrollbarOptionsProvider({ mode: 'hidden' })],
+	providers: [tuiScrollbarOptionsProvider({ mode: 'hover' })],
 })
-export class RecordsComponent implements AfterViewInit {
+export class RecordsComponent {
 	private readonly appService = inject(AppService);
+	private readonly router = inject(Router);
+	private readonly activatedRoute = inject(ActivatedRoute);
 	private readonly translocoService = inject(TranslocoService);
 	private readonly recordService = inject(RecordService);
-	private readonly destroyRef = inject(DestroyRef);
 	private readonly userService = inject(UserService);
 
-	private readonly scrollEventSubject = new Subject<HTMLElement>();
+	private readonly fields = signal<IField[]>(DEFAULT_FIELDS);
 
-	private readonly scrollPosition$ = this.scrollEventSubject.pipe(
-		map((container) => {
-			if (container.scrollTop < 100) return 'top';
-
-			const isBottom = Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 1;
-
-			return isBottom ? 'bottom' : null;
-		}),
+	private readonly queryParams = toSignal(
+		this.activatedRoute.queryParams.pipe(
+			map((value) => {
+				const queryParamsString = stringifyQueryParams(value, { addQueryPrefix: true });
+				const parsedQueryParams = parseQueryParams(queryParamsString, { ignoreQueryPrefix: true, interpretNumericEntities: true });
+				return {
+					page: Number(parsedQueryParams['page']),
+					size: Number(parsedQueryParams['size']),
+					filters: parsedQueryParams['filters'] as Record<string, FilterInput>,
+				} satisfies IQueryOptions as IQueryOptions;
+			}),
+		),
 	);
 
-	private readonly records = toSignal(this.recordService.records$, { initialValue: [] });
+	private readonly totalItems = toSignal(this.recordService.totalItems$, { initialValue: 1 });
 
 	private readonly specialtyTranslations$ = of(SPECIALTIES.map((specialty) => specialty as string)).pipe(
 		switchMap((specialties) => {
@@ -335,70 +375,56 @@ export class RecordsComponent implements AfterViewInit {
 
 	private readonly specialties = toSignal(this.specialtyTranslations$, { initialValue: [] });
 
-	private readonly scrollContainer = viewChild.required<CdkVirtualScrollViewport>('viewport');
-	private readonly rows = viewChildren<TuiTableTr<IRecord>, ElementRef>('row', { read: ElementRef });
+	public readonly mappedSpecialties = computed(() => this.specialties().map((specialty) => specialty.value));
+	public readonly records = toSignal(this.recordService.records$, { initialValue: [] });
+
+	public readonly page = linkedSignal(() => {
+		const value = this.queryParams()?.page;
+		return Number.isNaN(value) || value === undefined ? DEFAULT_PAGE : value;
+	});
+	public readonly size = linkedSignal(() => {
+		const value = this.queryParams()?.size;
+		return Number.isNaN(value) || value === undefined ? DEFAULT_PAGE_SIZE : value;
+	});
+	public readonly order = linkedSignal(() => this.queryParams()?.order ?? DEFAULT_ORDER);
+	public readonly filters = linkedSignal(() => {
+		const arrival = this.queryParams()?.filters?.['arrival'];
+		// TODO: Check on how to set default value, cause setting the value here doesn't trigger a request
+		let arrivalRange: TuiMonth | null = null;
+		let parsedArrival: [TuiDay, TuiTime] | null = null;
+		if (isFilterCondition(arrival) && Array.isArray(arrival.value) && arrival.operator === 'between') {
+			arrivalRange = toTuiMonth(parseDateString(arrival.value[0]) ?? undefined);
+		} else if (typeof arrival === 'string') {
+			parsedArrival = this.parseFilterDates(arrival);
+		}
+
+		const leaving = this.parseFilterDates(this.queryParams()?.filters?.['leaving']);
+		const specialty =
+			((this.queryParams()?.filters?.['specialty'] as FilterCondition | undefined)?.value as string[] | undefined)
+				?.map((value) => this.specialties().find((specialty) => specialty.key === value)?.value)
+				.filter((value) => value !== undefined) ?? [];
+
+		const value = {
+			id: (this.queryParams()?.filters?.['id'] as string | undefined) ?? null,
+			arrivalRange,
+			arrival: parsedArrival,
+			leaving,
+			from: (this.queryParams()?.filters?.['from'] as string | undefined) ?? null,
+			to: (this.queryParams()?.filters?.['to'] as string | undefined) ?? null,
+			specialty: new FormControl<string[]>(specialty),
+		};
+		return value;
+	});
 
 	public readonly isAdmin = toSignal(this.userService.isAdmin$, { initialValue: false });
 
 	public readonly recordsMarkedAsCorrect = fromCache<string[]>(RECORDS_MARKED_AS_CORRECT_STORAGE_KEY, []);
 
-	public readonly scrollPosition = toSignal(this.scrollPosition$, { initialValue: 'top' });
-
-	public readonly mappedSpecialties = computed(() => this.specialties().map((specialty) => specialty.value));
-
 	// TODO: Fix adding items to input chip
 	protected readonly disableNewTag = (item: string): boolean =>
 		!this.mappedSpecialties().find((specialty) => specialty.toLowerCase().includes(item.toLowerCase()));
 
-	public readonly filterForm = new FormGroup({
-		id: new FormControl<string | null>(null),
-		arrival: new FormControl<[TuiDay, TuiTime | null] | null>(null),
-		leaving: new FormControl<[TuiDay, TuiTime | null] | null>(null),
-		from: new FormControl<string | null>(null),
-		to: new FormControl<string | null>(null),
-		specialty: new FormControl<string[]>([], { nonNullable: true }),
-	});
-
-	public readonly filterFormChanged = toSignal(this.filterForm.valueChanges, { initialValue: this.filterForm.value });
-
-	public readonly filteredData = computed(() => {
-		const filter = this.filterFormChanged();
-		const specialties = this.specialties();
-		let records = this.records();
-
-		if (filter.id) {
-			const id = filter.id;
-			records = records.filter((record) => record.id.includes(id));
-		}
-		if (filter.arrival && filter.arrival[0]) {
-			const array = filter.arrival;
-			const arrival = new Date(array[0].year, array[0].month, array[0].day, array[1]?.hours ?? 0, array[1]?.minutes ?? 0, array[1]?.seconds ?? 0);
-
-			records = records.filter((record) => (array[1] ? isEqual(record.arrival, arrival) : isSameDay(record.arrival, arrival)));
-		}
-		if (filter.leaving && filter.leaving[0]) {
-			const array = filter.leaving;
-			const leaving = new Date(array[0].year, array[0].month, array[0].day, array[1]?.hours ?? 0, array[1]?.minutes ?? 0, array[1]?.seconds ?? 0);
-
-			records = records.filter((record) => record.leaving && (array[1] ? isEqual(record.leaving, leaving) : isSameDay(record.leaving, leaving)));
-		}
-		if (filter.from) {
-			const from = filter.from;
-			records = records.filter((record) => record.from.includes(from));
-		}
-		if (filter.to) {
-			const to = filter.to;
-			records = records.filter((record) => record.to.includes(to));
-		}
-		if (filter.specialty && filter.specialty.length > 0) {
-			const specialty = filter.specialty
-				.map((specialty) => specialties.find((s) => s.value === specialty)?.key)
-				.filter((specialty) => specialty !== undefined);
-			records = records.filter((record) => specialty.includes(record.specialty));
-		}
-
-		return records;
-	});
+	public readonly form = compatForm(this.filters);
 
 	public readonly selections = new SelectionModel<IRecord>(true, [], true, (left, right) => left.uuid === right.uuid);
 
@@ -422,20 +448,17 @@ export class RecordsComponent implements AfterViewInit {
 		{ initialValue: this.translocoService.getActiveLang() },
 	);
 
-	public readonly sortedData = computed(() => this.filteredData().sort((a, b) => a.arrival.getTime() - b.arrival.getTime()));
-	public readonly columns = computed(() => ['id', 'arrival', 'leaving', 'from', 'to', 'specialty', 'actions', 'select']);
+	public readonly columns = computed(() => {
+		const mapped = this.fields().map((field) => field.name);
+		return [...mapped, 'actions', 'select'];
+	});
+
+	public readonly pages = computed(() => {
+		const totalItems = this.totalItems();
+		return totalItems > 0 ? Math.ceil(totalItems / this.size()) : 1;
+	});
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate(`specialty.${item}`);
-
-	public ngAfterViewInit(): void {
-		this.scrollContainer()
-			.elementScrolled()
-			.pipe(
-				tap((value) => this.scrollEventSubject.next(value.target as HTMLElement)),
-				takeUntilDestroyed(this.destroyRef),
-			)
-			.subscribe();
-	}
 
 	public onPointerEvent(event: PointerEvent, record?: IRecord): void {
 		if (event.target instanceof HTMLInputElement || event.button === 2) return;
@@ -468,25 +491,8 @@ export class RecordsComponent implements AfterViewInit {
 	}
 
 	public selectAll(selectAll: boolean): void {
-		if (selectAll) this.selections.select(...this.sortedData());
+		if (selectAll) this.selections.select(...this.records());
 		else this.selections.clear();
-	}
-
-	public scrollTo(direction: 'top' | 'bottom'): void {
-		const index = direction === 'top' ? 0 : this.sortedData().length - 1;
-		this.scrollContainer().scrollToIndex(index, 'smooth');
-
-		if (direction === 'top') return;
-
-		this.scrollContainer()
-			.elementScrolled()
-			.pipe(
-				debounceTime(200),
-				filter(() => this.rows().length === this.sortedData().length),
-				tap(() => this.rows()[index].nativeElement.scrollIntoView({ behavior: 'smooth' })),
-				take(1),
-			)
-			.subscribe();
 	}
 
 	public onConetextButtonClick(dropdown: TuiDropdownDirective, event: 'markAsCorrect' | 'markAsIncorrect' | 'select' | 'delete', record: IRecord) {
@@ -515,5 +521,69 @@ export class RecordsComponent implements AfterViewInit {
 				break;
 		}
 		dropdown.toggle(false);
+	}
+	public navigateToPage(page: number): void {
+		this.router.navigate([], {
+			relativeTo: this.activatedRoute,
+			queryParams: { page },
+			queryParamsHandling: 'merge',
+		});
+	}
+
+	public onApplyFilter(_key: keyof ReturnType<typeof this.filters>) {
+		const raw = this.form().value();
+
+		const filters: Record<string, FilterInput> = {};
+
+		for (const _key of Object.keys(raw)) {
+			const element = raw[_key as keyof typeof raw];
+			if (Array.isArray(element)) {
+				filters[_key] = formatDateString(toNativeDateTime(element[0], element[1]), 'dd.MM.yyyy HH:mm:ss');
+			} else if (element instanceof FormControl) {
+				if ((element.value?.length ?? 0) > 0) {
+					const value: FilterInput = {
+						value: element.value
+							?.map((specialty) => this.specialties().find((item) => item.value === specialty)?.key)
+							.filter((value) => value !== undefined),
+						operator: 'in',
+					} satisfies FilterCondition;
+
+					filters[_key] = value;
+				}
+			} else if (element instanceof TuiMonth) {
+				const start = startOfMonth(element.toUtcNativeDate());
+				const end = endOfMonth(start);
+				const value = [formatDateString(start, 'dd.MM.yyyy HH:mm:ss'), formatDateString(end, 'dd.MM.yyyy HH:mm:ss')];
+				filters['arrival'] = { value, operator: 'between' } satisfies FilterCondition;
+			} else {
+				if (element) filters[_key] = element;
+			}
+		}
+
+		const queryParams = stringifyQueryParams({ page: this.page(), size: this.size(), filters }, { addQueryPrefix: true });
+		this.router.navigateByUrl(location.pathname + queryParams, { onSameUrlNavigation: 'ignore' });
+	}
+
+	public onInputClear(event: Event, key: keyof ReturnType<typeof this.filters>) {
+		if (!(event instanceof InputEvent) || event.inputType !== 'deleteContentBackward') return;
+
+		this.form[key]().value.set(null);
+		this.onApplyFilter('id');
+	}
+
+	public onArrivalRangeChange(event: TuiMonth | null) {
+		this.form.arrivalRange().value.set(event);
+		this.onApplyFilter('arrival');
+	}
+
+	private parseFilterDates(value?: unknown): [TuiDay, TuiTime] | null {
+		if (value && typeof value === 'string') {
+			const parsed = parseDateString(value);
+			if (parsed) {
+				return toTuiDayTime(parsed);
+			}
+		}
+
+		return null;
 	}
 }

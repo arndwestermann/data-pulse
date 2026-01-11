@@ -11,6 +11,7 @@ import { RecordService } from '../../services';
 import { IRecord, SPECIALTIES, Specialty, TRecordForm } from '../../models';
 import { customError, debounce, Field, form, required, submit, validateAsync } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
+import { toNativeDateTime, toTuiDayTime } from '../../utils';
 
 const angularImports = [ReactiveFormsModule, NgTemplateOutlet, Field];
 const thirdPartyImports = [TranslocoDirective];
@@ -129,8 +130,8 @@ export class RecordFormComponent {
 	public readonly recordModel = signal<TRecordForm>({
 		uuid: this.context.data?.uuid,
 		id: this.context.data?.id ?? '',
-		arrival: this.getTuiDayTime(this.context.data?.arrival ?? new Date()),
-		leaving: this.context.data?.leaving ? this.getTuiDayTime(this.context.data.leaving) : null,
+		arrival: toTuiDayTime(this.context.data?.arrival ?? new Date()),
+		leaving: this.context.data?.leaving ? toTuiDayTime(this.context.data.leaving) : null,
 		from: this.context.data?.from ?? '',
 		to: this.context.data?.to ?? '',
 		specialty: this.context.data?.specialty ?? 'internal',
@@ -185,8 +186,8 @@ export class RecordFormComponent {
 		submit(this.form, async (value) => {
 			const raw = value().value();
 			const uuid = raw.uuid;
-			const arrival = this.toNativeDateTime(raw.arrival[0], raw.arrival[1]);
-			const leaving = raw.leaving ? this.toNativeDateTime(raw.leaving[0], raw.leaving[1]) : undefined;
+			const arrival = toNativeDateTime(raw.arrival[0], raw.arrival[1]);
+			const leaving = raw.leaving ? toNativeDateTime(raw.leaving[0], raw.leaving[1]) : undefined;
 			const specialty = this.specialtyControl.value;
 			this.context.completeWith({
 				...raw,
@@ -209,20 +210,4 @@ export class RecordFormComponent {
 	}
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate('specialty.' + item);
-
-	private getTuiDayTime(date: Date): [TuiDay, TuiTime] {
-		return [this.getTuiDay(date), this.getTuiTime(date)];
-	}
-
-	private getTuiDay(date: Date): TuiDay {
-		return new TuiDay(date.getFullYear(), date.getMonth(), date.getDate());
-	}
-
-	private getTuiTime(date: Date): TuiTime {
-		return new TuiTime(date.getHours(), date.getMinutes(), date.getSeconds());
-	}
-
-	private toNativeDateTime(day: TuiDay, time: TuiTime): Date {
-		return new Date(day.year ?? 0, day.month ?? 0, day.day ?? 0, time.hours, time.minutes, time.seconds);
-	}
 }

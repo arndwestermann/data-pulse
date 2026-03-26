@@ -26,13 +26,13 @@ import { mapRecordToResponse } from '../shared';
 import { Response } from 'express';
 import { AuthorizationGuard } from '../role/guards/authorization.guard';
 import { Permission } from '../shared/decorators';
-import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IPage, isError } from '@arndwestermann/common';
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IPage, isError, KeyValue } from '@arndwestermann/common';
 import { QueryOptions } from '../shared/models';
 
 @UseGuards(AuthorizationGuard)
 @Controller('record')
 export class RecordController {
-	private readonly logger = new Logger('RecordController');
+	private readonly _ = new Logger('RecordController');
 	constructor(private readonly recordService: RecordService) {}
 
 	@Permission({ ressource: 'record', actions: ['create'] })
@@ -65,6 +65,33 @@ export class RecordController {
 						itemsPerPage: options.size ?? DEFAULT_PAGE_SIZE,
 						page: options.page ?? DEFAULT_PAGE,
 						totalItems: value.count,
+					});
+				}
+
+				switch (value.status) {
+					case HttpStatus.BAD_REQUEST:
+						throw new BadRequestException(value.statusText);
+
+					default:
+						throw new InternalServerErrorException(value.statusText);
+				}
+			}),
+		);
+	}
+
+	// TODO: move to own endpoint, it is currently here because of there is no resource yet for it for the role management
+	@Permission({ ressource: 'record', actions: ['read'] })
+	@Get('heat-map')
+	getHeatmap(@Res() response: Response<IPage<KeyValue<Date, IRecordResponse[][]>[]>>, @Query() options: QueryOptions, @User() user: TokenPayload) {
+		return this.recordService.getHeatmap(user.sub, options).pipe(
+			map((value) => {
+				if (!isError(value)) {
+					const data = value.map((item) => ({ ...item, value: item.value.map((hour) => hour.map(mapRecordToResponse)) }));
+					return response.status(HttpStatus.OK).send({
+						data,
+						itemsPerPage: -1,
+						page: -1,
+						totalItems: data.length,
 					});
 				}
 

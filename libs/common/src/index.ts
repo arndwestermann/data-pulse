@@ -8,6 +8,7 @@ export * from './lib/models/page.model';
 export * from './lib/models/field.model';
 export * from './lib/models/operator.model';
 export * from './lib/models/translation.model';
+export * from './lib/models/key-value.model';
 
 // Utils
 export * from './lib/utils/get-paginated/get-paginated.util';

@@ -1,6 +1,9 @@
-import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { environment } from '../../../../environments/environment';
+import { HttpClient } from '@angular/common/http';
+import { Params } from '@angular/router';
+
+import { TuiDialogService } from '@taiga-ui/core';
+import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import {
 	catchError,
 	combineLatest,
@@ -21,16 +24,13 @@ import {
 	Subject,
 	switchMap,
 } from 'rxjs';
-
+import { stringify as stringifyQueryParams } from 'qs';
 import { IPage } from '@arndwestermann/common';
 
-import { stringify as stringifyQueryParams } from 'qs';
+import { environment } from '../../../../environments/environment';
 import { IRecord, IRecordDto, IWorker, NEVER_ASK_DELETE_AGAIN_STORAGE_KEY, TCrud } from '../../models';
 import { mapDtoToRecord, mapRecordToDto } from '../../utils';
-import { TuiDialogService } from '@taiga-ui/core';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { CacheService } from '../cache/cache.service';
-import { ActivatedRoute, Router } from '@angular/router';
 
 @Injectable({
 	providedIn: 'root',
@@ -39,11 +39,10 @@ export class RecordService {
 	private readonly http = inject(HttpClient);
 	private readonly dialogService = inject(TuiDialogService);
 	private readonly cacheService = inject(CacheService);
-	private readonly router = inject(Router);
-	private readonly activatedRoute = inject(ActivatedRoute);
 
 	private readonly worker = new Worker(new URL('./csv.worker', import.meta.url));
 
+	private readonly queryParamsSubject = new Subject<Params>();
 	private readonly createOrUpdateSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord | null }>();
 	private readonly readSubject = new Subject<void>();
 	private readonly deleteSelectedSubject = new Subject<IRecord[]>();
@@ -76,7 +75,7 @@ export class RecordService {
 		switchMap((records) => from(records)),
 	);
 
-	private readonly read$ = combineLatest([this.readSubject.pipe(startWith(void 0)), this.activatedRoute.queryParams]).pipe(
+	private readonly read$ = combineLatest([this.readSubject.pipe(startWith(void 0)), this.queryParamsSubject]).pipe(
 		switchMap(([, queryParams]) => {
 			const queryParamsString = stringifyQueryParams(queryParams, { addQueryPrefix: true });
 
@@ -171,5 +170,9 @@ export class RecordService {
 			map((dto) => mapDtoToRecord(dto)),
 			catchError(() => of(null)),
 		);
+	}
+
+	public setQueryParams(params: Params): void {
+		this.queryParamsSubject.next(params);
 	}
 }

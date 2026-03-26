@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { TuiAppearance, TuiDialogContext, TuiTitle } from '@taiga-ui/core';
 import { POLYMORPHEUS_CONTEXT, PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -18,7 +18,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
 		<header tuiHeader>
 			<h2 tuiTitle>{{ context.data.day | date: 'longDate' : undefined : context.data.locale }}</h2>
 		</header>
-		@for (item of mappedRecords(); track $index) {
+		@for (item of records(); track $index) {
 			<button tuiCardLarge tuiAppearance="floating" type="button" class="hover:cursor-pointer" (pointerdown)="editRecord(item)">
 				<header tuiHeader>
 					<h1 tuiTitle>
@@ -53,11 +53,9 @@ import { TranslocoDirective } from '@jsverse/transloco';
 export class HeatmapDetailDialogComponent {
 	private readonly recordService = inject(RecordService);
 
-	private readonly records = toSignal(this.recordService.records$, { initialValue: [] });
-
 	public readonly context = inject<TuiDialogContext<unknown, IHeatmapDetailDialogContext>>(POLYMORPHEUS_CONTEXT);
 
-	public mappedRecords = computed(() => this.records().filter((record) => this.context.data.records.includes(record.uuid ?? '')));
+	public readonly records = signal(this.context.data.records);
 
 	public editRecord(record: IRecord): void {
 		this.recordService.createOrUpdateRecord(new PolymorpheusComponent(RecordFormComponent), record);

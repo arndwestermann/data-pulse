@@ -303,7 +303,7 @@ export class CustomHeatmapComponent extends BaseChartComponent {
 			else if (value >= 16) return '#dc2626';
 			else if (value >= 15) return '#f97316';
 			else if (value >= 13) return '#fcd34d';
-			else return '#22c55e';
+			else return '#fff';
 		});
 	}
 

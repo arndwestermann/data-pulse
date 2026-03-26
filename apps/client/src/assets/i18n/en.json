@@ -11,7 +11,9 @@
 		"markAsCorrect": "Mark as correct",
 		"markAsIncorrect": "Mark as incorrect",
 		"select": "Select",
-		"unselect": "Unselect"
+		"unselect": "Unselect",
+		"fromTo": "From - To",
+		"chooseRange": "Choose range"
 	},
 	"routes": {
 		"records": "Records",
@@ -31,7 +33,6 @@
 	"heatmap": {
 		"specialty": "Specialty",
 		"total": "Total",
-		"chooseRange": "Choose range",
 		"admissions": "Ad",
 		"discharges": "Dis"
 	},

@@ -1,17 +1,17 @@
-import { startOfMonth, endOfMonth, isWithinInterval, isSameDay, isBefore, differenceInDays, addDays } from 'date-fns';
-import { IHeatMap } from '../../models/heat-map.model';
-import { IRecord } from '../../../../shared/models';
+import { KeyValue } from '@arndwestermann/common';
+import { Record } from '../../record/entities/record.entity';
+import { startOfMonth, endOfMonth, differenceInDays, addDays, isWithinInterval, isBefore, isSameDay } from 'date-fns';
 
-export function getHeatMap(data: IRecord[], startDate?: Date, endDate?: Date): IHeatMap[] {
+export function getHeatMap(data: Record[], startDate?: Date, endDate?: Date): KeyValue<Date, Record[][]>[] {
 	const start = startDate || startOfMonth(new Date());
 	const end = endDate || endOfMonth(new Date());
 	const now = new Date();
 
-	const heatmap: IHeatMap[] = Array.from({ length: differenceInDays(end, start) + 1 }, (_, index) => ({
+	const heatmap: KeyValue<Date, Record[][]>[] = Array.from({ length: differenceInDays(end, start) + 1 }, (_, index) => ({
 		key: addDays(start, index),
 		value: Array(24)
 			.fill(0)
-			.map(() => []) as IRecord[][],
+			.map(() => []) as Record[][],
 	}));
 
 	for (const entry of data) {
@@ -34,5 +34,6 @@ export function getHeatMap(data: IRecord[], startDate?: Date, endDate?: Date): I
 			}
 		}
 	}
+
 	return heatmap;
 }

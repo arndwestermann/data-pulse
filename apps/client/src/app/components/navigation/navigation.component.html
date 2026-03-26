@@ -36,7 +36,7 @@
 		drawerClass="w-30 md:w-60 flex flex-col">
 		<nav class="grow flex flex-col gap-2 w-full h-full text-base border-r-2 border-gray-100" *transloco="let transloco; prefix: 'routes'">
 			@for (route of routes(); track $index) {
-				<div
+				<a
 					class="flex w-full items-center p-2 hover:bg-gray-200 cursor-pointer"
 					[routerLink]="'/' + route.path"
 					[routerLinkActiveOptions]="{ exact: true }"
@@ -45,14 +45,14 @@
 					[ngClass]="rla.isActive ? 'bg-gray-200' : ''">
 					<tui-icon [@nav-animation-icon]="isDrawerOpen() ? 'opened' : 'closed'" [icon]="'@tui.fa.solid.' + route.data?.['icon']" />
 					@if (isDrawerOpen()) {
-						<a
+						<span
 							[@nav-animation-text]="isDrawerOpen() ? 'opened' : 'closed'"
 							*transloco="let transloco; prefix: 'routes'"
 							class="ml-2 flex rounded-sm w-full">
 							{{ transloco(route.data?.['translationKey']) }}
-						</a>
+						</span>
 					}
-				</div>
+				</a>
 			}
 		</nav>
 		<div class="flex grow flex-col overflow-y-auto" [style.background-color]="'var(--tui-theme-color)'"></div>

@@ -15,15 +15,15 @@ import { DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 
 import { IRecord, SPECIALTIES, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY, DEFAULT_FIELDS } from '../../shared/models';
-import { fromCache, toTuiDayTime, toNativeDateTime, toTuiMonth } from '../../shared/utils';
+import { fromCache, toNativeDateTime, toTuiMonth, parseFilterDatesToTuiDayTime, toTuiDay } from '../../shared/utils';
 
-import { combineLatest, map, of, switchMap } from 'rxjs';
+import { combineLatest, map, of, shareReplay, switchMap, take, tap } from 'rxjs';
 
 import { RecordFormComponent } from '../../shared/components';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { ConfirmDeleteComponent } from './components/confirm-delete/confirm-delete.component';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { AppService, RecordService, UserService } from '../../shared/services';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
@@ -33,11 +33,12 @@ import {
 	TuiFilterByInputPipe,
 	TuiHideSelectedPipe,
 	TuiInputChip,
+	TuiInputDateRange,
 	TuiInputDateTime,
 	TuiInputMonth,
 	TuiPagination,
 } from '@taiga-ui/kit';
-import { TuiDay, TuiMonth, TuiTime } from '@taiga-ui/cdk';
+import { TuiDay, TuiDayRange, TuiMonth, TuiTime, TuiYear } from '@taiga-ui/cdk';
 import { GetStatusPipe, MarkedAsCorrectPipe } from './pipes';
 import { ActivatedRoute, Router } from '@angular/router';
 import { parse as parseQueryParams, stringify as stringifyQueryParams } from 'qs';
@@ -55,7 +56,7 @@ import {
 } from '@arndwestermann/common';
 import { Field } from '@angular/forms/signals';
 import { compatForm } from '@angular/forms/signals/compat';
-import { endOfMonth, startOfMonth } from 'date-fns';
+import { endOfMonth, startOfMonth, startOfToday } from 'date-fns';
 
 const angularImports = [FormsModule, ReactiveFormsModule, DatePipe, Field];
 const firstPartyImports = [GetStatusPipe, MarkedAsCorrectPipe];
@@ -76,7 +77,7 @@ const taigaUiImports = [
 	TuiFilterByInputPipe,
 	TuiPagination,
 	TuiHideSelectedPipe,
-	TuiInputMonth,
+	TuiInputDateRange,
 ];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
@@ -108,15 +109,17 @@ const thirdPartyImports = [TranslocoDirective];
 						<span>({{ selections.selected.length }})</span>
 					}
 				</button>
+				<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
+					<tui-icon icon="@tui.fa.solid.gear" />
+				</button>
 
-				<tui-textfield tuiTextfieldSize="s" class="w-40">
+				<tui-textfield tuiTextfieldSize="s" class="w-50" [tuiTextfieldCleaner]="true">
 					<input
-						[placeholder]="transloco('records.arrival')"
-						tuiInputMonth
-						[ngModel]="form.arrivalRange().value()"
-						(ngModelChange)="onArrivalRangeChange($event)" />
-
-					<tui-calendar-month *tuiTextfieldDropdown />
+						tuiInputDateRange
+						[placeholder]="transloco('general.chooseRange')"
+						[ngModel]="form.range().value()"
+						(ngModelChange)="onDateRangeChanged($event)" />
+					<tui-calendar-range *tuiTextfieldDropdown />
 				</tui-textfield>
 			</div>
 			<tui-scrollbar class="grow">
@@ -346,15 +349,22 @@ export class RecordsComponent {
 	private readonly userService = inject(UserService);
 
 	private readonly fields = signal<IField[]>(DEFAULT_FIELDS);
+	private readonly queryParams$ = this.activatedRoute.queryParams.pipe(
+		tap((value) => this.recordService.setQueryParams(value)),
+		shareReplay(1),
+		takeUntilDestroyed(),
+	);
 
 	private readonly queryParams = toSignal(
-		this.activatedRoute.queryParams.pipe(
+		this.queryParams$.pipe(
 			map((value) => {
 				const queryParamsString = stringifyQueryParams(value, { addQueryPrefix: true });
 				const parsedQueryParams = parseQueryParams(queryParamsString, { ignoreQueryPrefix: true, interpretNumericEntities: true });
+				const page = Number(parsedQueryParams['page']);
+				const size = Number(parsedQueryParams['size']);
 				return {
-					page: Number(parsedQueryParams['page']),
-					size: Number(parsedQueryParams['size']),
+					page: !Number.isNaN(page) ? page : DEFAULT_PAGE,
+					size: !Number.isNaN(size) ? size : DEFAULT_PAGE_SIZE,
 					filters: parsedQueryParams['filters'] as Record<string, FilterInput>,
 				} satisfies IQueryOptions as IQueryOptions;
 			}),
@@ -388,17 +398,17 @@ export class RecordsComponent {
 	});
 	public readonly order = linkedSignal(() => this.queryParams()?.order ?? DEFAULT_ORDER);
 	public readonly filters = linkedSignal(() => {
-		const arrival = this.queryParams()?.filters?.['arrival'];
+		const filters = this.queryParams()?.filters;
+		const arrival = filters?.['arrival'];
 		// TODO: Check on how to set default value, cause setting the value here doesn't trigger a request
-		let arrivalRange: TuiMonth | null = null;
 		let parsedArrival: [TuiDay, TuiTime] | null = null;
 		if (isFilterCondition(arrival) && Array.isArray(arrival.value) && arrival.operator === 'between') {
-			arrivalRange = toTuiMonth(parseDateString(arrival.value[0]) ?? undefined);
+			// noop
 		} else if (typeof arrival === 'string') {
-			parsedArrival = this.parseFilterDates(arrival);
+			parsedArrival = parseFilterDatesToTuiDayTime(arrival);
 		}
 
-		const leaving = this.parseFilterDates(this.queryParams()?.filters?.['leaving']);
+		const leaving = parseFilterDatesToTuiDayTime(this.queryParams()?.filters?.['leaving']);
 		const specialty =
 			((this.queryParams()?.filters?.['specialty'] as FilterCondition | undefined)?.value as string[] | undefined)
 				?.map((value) => this.specialties().find((specialty) => specialty.key === value)?.value)
@@ -406,7 +416,7 @@ export class RecordsComponent {
 
 		const value = {
 			id: (this.queryParams()?.filters?.['id'] as string | undefined) ?? null,
-			arrivalRange,
+			range: this.parseRangeQuery(filters),
 			arrival: parsedArrival,
 			leaving,
 			from: (this.queryParams()?.filters?.['from'] as string | undefined) ?? null,
@@ -459,6 +469,15 @@ export class RecordsComponent {
 	});
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate(`specialty.${item}`);
+
+	constructor() {
+		this.queryParams$
+			.pipe(
+				take(1),
+				tap((value) => this.recordService.setQueryParams(value)),
+			)
+			.subscribe();
+	}
 
 	public onPointerEvent(event: PointerEvent, record?: IRecord): void {
 		if (event.target instanceof HTMLInputElement || event.button === 2) return;
@@ -530,7 +549,7 @@ export class RecordsComponent {
 		});
 	}
 
-	public onApplyFilter(_key: keyof ReturnType<typeof this.filters>) {
+	public onApplyFilter(_: keyof ReturnType<typeof this.filters>) {
 		const raw = this.form().value();
 
 		const filters: Record<string, FilterInput> = {};
@@ -550,11 +569,11 @@ export class RecordsComponent {
 
 					filters[_key] = value;
 				}
-			} else if (element instanceof TuiMonth) {
-				const start = startOfMonth(element.toUtcNativeDate());
-				const end = endOfMonth(start);
+			} else if (element instanceof TuiDayRange) {
+				const start = element.from.toLocalNativeDate();
+				const end = element.to.toLocalNativeDate();
 				const value = [formatDateString(start, 'dd.MM.yyyy HH:mm:ss'), formatDateString(end, 'dd.MM.yyyy HH:mm:ss')];
-				filters['arrival'] = { value, operator: 'between' } satisfies FilterCondition;
+				filters[_key] = { value, operator: 'between' } satisfies FilterCondition;
 			} else {
 				if (element) filters[_key] = element;
 			}
@@ -571,19 +590,28 @@ export class RecordsComponent {
 		this.onApplyFilter('id');
 	}
 
-	public onArrivalRangeChange(event: TuiMonth | null) {
-		this.form.arrivalRange().value.set(event);
-		this.onApplyFilter('arrival');
+	public onDateRangeChanged(event: TuiDayRange): void {
+		this.form.range().value.set(event);
+		this.onApplyFilter('range');
 	}
 
-	private parseFilterDates(value?: unknown): [TuiDay, TuiTime] | null {
-		if (value && typeof value === 'string') {
-			const parsed = parseDateString(value);
-			if (parsed) {
-				return toTuiDayTime(parsed);
-			}
+	private parseRangeQuery(filters?: Record<string, FilterInput>) {
+		const range = filters?.['range'];
+		// TODO: Check on how to set default value, cause setting the value here doesn't trigger a request
+		let parsedRange: TuiDayRange | null = null;
+
+		if (isFilterCondition(range) && Array.isArray(range.value) && range.operator === 'between') {
+			const start = startOfMonth(new Date());
+			const from = toTuiDay(parseDateString(range.value[0]) ?? start);
+			const to = toTuiDay(parseDateString(range.value[1]) ?? endOfMonth(start));
+
+			parsedRange = new TuiDayRange(from, to);
+		} else if (typeof range === 'string') {
+			const from = parseDateString(range) ?? startOfToday();
+			const to = endOfMonth(from);
+			parsedRange = new TuiDayRange(toTuiDay(from), toTuiDay(to));
 		}
 
-		return null;
+		return parsedRange;
 	}
 }

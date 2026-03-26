@@ -11,7 +11,9 @@
 		"markAsCorrect": "Als richtig markieren",
 		"markAsIncorrect": "Als nicht richtig markieren",
 		"select": "Auswählen",
-		"unselect": "Abwählen"
+		"unselect": "Abwählen",
+		"fromTo": "Von - Bis",
+		"chooseRange": "Zeitraum auswählen"
 	},
 	"routes": {
 		"records": "Archiv",
@@ -31,7 +33,6 @@
 	"heatmap": {
 		"specialty": "Fachgebiet",
 		"total": "Summe",
-		"chooseRange": "Datumsbereich auswählen",
 		"admissions": "Zu",
 		"discharges": "Ab"
 	},

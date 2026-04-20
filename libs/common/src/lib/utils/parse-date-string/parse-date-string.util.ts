@@ -11,10 +11,8 @@ import { DATE_FORMATS } from '../../models/constants';
 export function parseDateString(value?: string, formats: string[] = DATE_FORMATS): Date | null {
 	if (!value) return null;
 
-	if (formats.length === 0) {
-		const parsed = parseJSON(value);
-		return isValidDate(parsed) ? parsed : null;
-	}
+	const fromJSON = parseJSON(value);
+	if (isValidDate(fromJSON)) return fromJSON;
 
 	for (const format of formats) {
 		const parsed = parseDate(value, format, new Date());

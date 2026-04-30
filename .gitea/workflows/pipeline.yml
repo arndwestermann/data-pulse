@@ -5,5 +5,8 @@ on: [push]
 jobs:
   Builder:
     runs-on: node-24-alpine
+    defaults:
+      run:
+        shell: sh
     steps:
       - run: node -v

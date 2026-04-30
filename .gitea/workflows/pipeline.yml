@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   Builder:
-    runs-on: node-24-alpine
+    runs-on: node-24
     defaults:
       run:
         shell: sh

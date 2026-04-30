@@ -1,0 +1,9 @@
+name: Build
+run-name: ${{ gitea.actor }} is testing out Gitea Actions 🚀
+on: [push]
+
+jobs:
+  Builder:
+    runs-on: node-24-alpine
+    steps:
+      - run: node -v

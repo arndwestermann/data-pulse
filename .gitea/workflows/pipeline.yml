@@ -10,3 +10,5 @@ jobs:
         shell: sh
     steps:
       - run: node -v
+      - run: which ssh
+      - run: ssh -V

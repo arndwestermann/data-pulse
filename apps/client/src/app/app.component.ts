@@ -32,6 +32,7 @@ export class AppComponent implements OnInit {
 	public readonly isLoading = toSignal(this.appService.isLoading$, { initialValue: false });
 
 	public ngOnInit(): void {
+		console.log('ngOnInit');
 		this.theme.color = '#393D47';
 		this.userService.user$.pipe(take(1)).subscribe();
 	}

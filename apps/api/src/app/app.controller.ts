@@ -15,6 +15,6 @@ export class AppController {
 	@Get('health')
 	@Public()
 	health(@Res() res: Response) {
-		res.status(418).send({ ping: 'Ok' });
+		res.status(418).send({ ping: 'Ok!' });
 	}
 }

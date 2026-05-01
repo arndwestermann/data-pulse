@@ -16,13 +16,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 			</tui-loader>
 		</tui-root>
 	`,
-	styles: `
-		@reference '../styles.css';
-
-		:host {
-			@apply block h-full;
-		}
-	`,
+	// TODO: Check how to fix `Can't resolve ../styles.css in tests when styles inline`
+	styleUrl: './app.component.css',
 })
 export class AppComponent implements OnInit {
 	private readonly theme = inject(TuiThemeColorService);
@@ -32,7 +27,6 @@ export class AppComponent implements OnInit {
 	public readonly isLoading = toSignal(this.appService.isLoading$, { initialValue: false });
 
 	public ngOnInit(): void {
-		console.log('ngOnInit');
 		this.theme.color = '#393D47';
 		this.userService.user$.pipe(take(1)).subscribe();
 	}

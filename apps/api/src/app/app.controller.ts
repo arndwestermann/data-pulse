@@ -1,6 +1,7 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import { AppService } from './app.service';
 import { Response } from 'express';
+import { Public } from './authentication/decorators';
 
 @Controller()
 export class AppController {
@@ -11,7 +12,8 @@ export class AppController {
 		return this.appService.helloWorld();
 	}
 
-	@Get()
+	@Get('health')
+	@Public()
 	health(@Res() res: Response) {
 		res.status(418).send({ ping: 'Ok' });
 	}

@@ -27,17 +27,30 @@ jobs:
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: Derive NX SHAs
-        uses: nrwl/nx-set-shas@v4
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Derive NX SHAs
+        run: |
+          HEAD="${{ gitea.sha }}"
+
+          if [ "${{ gitea.event_name }}" = "pull_request" ]; then
+            # PR: diff against the base branch SHA provided in event payload
+            BASE="${{ gitea.event.pull_request.base.sha }}"
+          else
+            # Push: diff against previous commit; fall back to first commit if only one exists
+            BASE=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "NX_BASE=$BASE" >> $GITHUB_ENV
+          echo "NX_HEAD=$HEAD" >> $GITHUB_ENV
+          echo "NX_BASE=$BASE  NX_HEAD=$HEAD"
 
       - name: Restore NX cache
         uses: actions/cache@v4
         with:
           path: .nx/cache
-          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ github.sha }}
+          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ gitea.sha }}
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             nx-${{ runner.os }}-
@@ -49,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-${{ github.sha }}
+          name: coverage-${{ gitea.sha }}
           path: coverage/
           retention-days: 7
 
@@ -71,17 +84,28 @@ jobs:
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - name: Derive NX SHAs
-        uses: nrwl/nx-set-shas@v4
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Derive NX SHAs
+        run: |
+          HEAD="${{ gitea.sha }}"
+
+          if [ "${{ gitea.event_name }}" = "pull_request" ]; then
+            BASE="${{ gitea.event.pull_request.base.sha }}"
+          else
+            BASE=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "NX_BASE=$BASE" >> $GITHUB_ENV
+          echo "NX_HEAD=$HEAD" >> $GITHUB_ENV
+          echo "NX_BASE=$BASE  NX_HEAD=$HEAD"
 
       - name: Restore NX cache
         uses: actions/cache@v4
         with:
           path: .nx/cache
-          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ github.sha }}
+          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ gitea.sha }}
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             nx-${{ runner.os }}-
@@ -92,7 +116,7 @@ jobs:
       - name: Upload dist
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ github.sha }}
+          name: dist-${{ gitea.sha }}
           path: dist/
           retention-days: 1
 
@@ -100,8 +124,7 @@ jobs:
     name: Deploy via SSH
     runs-on: node-24
     needs: build
-    # Only deploy on push to main/master (not PRs)
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master')
     defaults:
       run:
         shell: sh
@@ -109,7 +132,7 @@ jobs:
       - name: Download dist
         uses: actions/download-artifact@v4
         with:
-          name: dist-${{ github.sha }}
+          name: dist-${{ gitea.sha }}
           path: dist/
 
       - name: Deploy to server
@@ -120,28 +143,21 @@ jobs:
           SSH_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          # Write SSH key
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-          # Trust host (skip interactive prompt)
           ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
-          # Sync dist to server
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
             dist/ \
             "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
 
-          # Run post-deploy commands on server (adjust as needed)
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
             cd $DEPLOY_PATH
-            # Example: restart NestJS PM2 process
             # pm2 restart api
-            # Example: reload nginx for Angular
             # nginx -s reload
           EOF
 
-          # Cleanup key
           rm -f ~/.ssh/deploy_key

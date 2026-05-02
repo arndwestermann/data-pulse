@@ -9,7 +9,6 @@ on:
 env:
   PNPM_VERSION: '10'
   NX_PARALLEL: '2'
-  NX_MAX_WORKERS: '2'
 
 jobs:
   test:
@@ -48,13 +47,22 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .nx/cache
-          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ gitea.sha }}
+          # include nx version in key to bust cache on nx upgrades
+          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-${{ gitea.sha }}
           restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-
             nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             nx-${{ runner.os }}-
 
       - name: Test affected
-        run: pnpm nx affected --target=test --base=$NX_BASE --head=$NX_HEAD --parallel=$NX_PARALLEL --max-workers=$NX_MAX_WORKERS --ci --passWithNoTests
+        run: |
+          pnpm nx affected \
+            --target=test \
+            --base=$NX_BASE \
+            --head=$NX_HEAD \
+            --parallel=$NX_PARALLEL \
+            --ci \
+            --passWithNoTests
 
       - name: Upload coverage
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4
@@ -101,13 +109,21 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .nx/cache
-          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ gitea.sha }}
+          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-${{ gitea.sha }}
           restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-
             nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
             nx-${{ runner.os }}-
 
       - name: Build affected
-        run: pnpm nx affected --target=build --base=$NX_BASE --head=$NX_HEAD --parallel=$NX_PARALLEL --max-workers=$NX_MAX_WORKERS
+        # --max-workers is NX-level only, NOT passed through to executors
+        # Angular and NestJS builders don't accept --max-workers
+        run: |
+          pnpm nx affected \
+            --target=build \
+            --base=$NX_BASE \
+            --head=$NX_HEAD \
+            --parallel=$NX_PARALLEL
 
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4

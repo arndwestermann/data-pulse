@@ -8,9 +8,11 @@ on:
 
 env:
   PNPM_VERSION: '10'
-  # Throttle NX workers to prevent CPU exhaustion on self-hosted runner
-  NX_PARALLEL: '2'
-  NX_MAX_WORKERS: '2'
+  # NX: how many projects run in parallel
+  NX_PARALLEL: '1'
+  # Jest: how many workers each test process spawns
+  # runInBand = single thread per project, no worker pool
+  JEST_FLAGS: '--runInBand'
 
 jobs:
   test:
@@ -55,7 +57,15 @@ jobs:
             nx-${{ runner.os }}-
 
       - name: Test affected
-        run: pnpm nx affected --target=test --base=$NX_BASE --head=$NX_HEAD --parallel=$NX_PARALLEL --max-workers=$NX_MAX_WORKERS --ci --passWithNoTests
+        run: |
+          pnpm nx affected \
+            --target=test \
+            --base=$NX_BASE \
+            --head=$NX_HEAD \
+            --parallel=$NX_PARALLEL \
+            --ci \
+            --passWithNoTests \
+            -- $JEST_FLAGS
 
       - name: Upload coverage
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4
@@ -108,7 +118,12 @@ jobs:
             nx-${{ runner.os }}-
 
       - name: Build affected
-        run: pnpm nx affected --target=build --base=$NX_BASE --head=$NX_HEAD --parallel=$NX_PARALLEL --max-workers=$NX_MAX_WORKERS
+        run: |
+          pnpm nx affected \
+            --target=build \
+            --base=$NX_BASE \
+            --head=$NX_HEAD \
+            --parallel=$NX_PARALLEL
 
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4

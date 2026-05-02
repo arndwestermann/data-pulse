@@ -8,6 +8,9 @@ on:
 
 env:
   PNPM_VERSION: '10'
+  # Throttle NX workers to prevent CPU exhaustion on self-hosted runner
+  NX_PARALLEL: '2'
+  NX_MAX_WORKERS: '2'
 
 jobs:
   test:
@@ -33,21 +36,17 @@ jobs:
       - name: Derive NX SHAs
         run: |
           HEAD="${{ gitea.sha }}"
-
           if [ "${{ gitea.event_name }}" = "pull_request" ]; then
-            # PR: diff against the base branch SHA provided in event payload
             BASE="${{ gitea.event.pull_request.base.sha }}"
           else
-            # Push: diff against previous commit; fall back to first commit if only one exists
             BASE=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD)
           fi
-
           echo "NX_BASE=$BASE" >> $GITHUB_ENV
           echo "NX_HEAD=$HEAD" >> $GITHUB_ENV
           echo "NX_BASE=$BASE  NX_HEAD=$HEAD"
 
       - name: Restore NX cache
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: .nx/cache
           key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ gitea.sha }}
@@ -56,10 +55,10 @@ jobs:
             nx-${{ runner.os }}-
 
       - name: Test affected
-        run: pnpm nx affected --target=test --base=$NX_BASE --head=$NX_HEAD --parallel=3 --ci --passWithNoTests
+        run: pnpm nx affected --target=test --base=$NX_BASE --head=$NX_HEAD --parallel=$NX_PARALLEL --max-workers=$NX_MAX_WORKERS --ci --passWithNoTests
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: https://github.com/christopherHX/gitea-upload-artifact@v4
         if: always()
         with:
           name: coverage-${{ gitea.sha }}
@@ -90,19 +89,17 @@ jobs:
       - name: Derive NX SHAs
         run: |
           HEAD="${{ gitea.sha }}"
-
           if [ "${{ gitea.event_name }}" = "pull_request" ]; then
             BASE="${{ gitea.event.pull_request.base.sha }}"
           else
             BASE=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD)
           fi
-
           echo "NX_BASE=$BASE" >> $GITHUB_ENV
           echo "NX_HEAD=$HEAD" >> $GITHUB_ENV
           echo "NX_BASE=$BASE  NX_HEAD=$HEAD"
 
       - name: Restore NX cache
-        uses: actions/cache@v4
+        uses: actions/cache@v3
         with:
           path: .nx/cache
           key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ gitea.sha }}
@@ -111,7 +108,7 @@ jobs:
             nx-${{ runner.os }}-
 
       - name: Build affected
-        run: pnpm nx affected --target=build --base=$NX_BASE --head=$NX_HEAD --parallel=3
+        run: pnpm nx affected --target=build --base=$NX_BASE --head=$NX_HEAD --parallel=$NX_PARALLEL --max-workers=$NX_MAX_WORKERS
 
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4
@@ -130,7 +127,7 @@ jobs:
         shell: sh
     steps:
       - name: Download dist
-        uses: actions/download-artifact@v4
+        uses: https://github.com/christopherHX/gitea-upload-artifact@v4
         with:
           name: dist-${{ gitea.sha }}
           path: dist/

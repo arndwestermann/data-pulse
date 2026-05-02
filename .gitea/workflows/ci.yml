@@ -27,32 +27,21 @@ jobs:
         with:
           version: ${{ env.PNPM_VERSION }}
 
+      - name: Get pnpm store path
+        run: echo "PNPM_STORE=$(pnpm store path)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Derive NX SHAs
-        run: |
-          HEAD="${{ gitea.sha }}"
-          if [ "${{ gitea.event_name }}" = "pull_request" ]; then
-            BASE="${{ gitea.event.pull_request.base.sha }}"
-          else
-            BASE=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD)
-          fi
-          echo "NX_BASE=$BASE" >> $GITHUB_ENV
-          echo "NX_HEAD=$HEAD" >> $GITHUB_ENV
-
-      - name: Restore NX cache
-        uses: actions/cache@v3
-        with:
-          path: .nx/cache
-          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-${{ gitea.sha }}
-          restore-keys: |
-            nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-
-            nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            nx-${{ runner.os }}-
-
-      - name: Test affected
-        run: pnpm nx affected --target=test --base=$NX_BASE --head=$NX_HEAD --parallel=1 --ci --passWithNoTests
+      - name: Test all
+        run: pnpm nx run-many --target=test --all --parallel=1 --ci --passWithNoTests
 
       - name: Upload coverage
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4
@@ -80,32 +69,21 @@ jobs:
         with:
           version: ${{ env.PNPM_VERSION }}
 
+      - name: Get pnpm store path
+        run: echo "PNPM_STORE=$(pnpm store path)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Derive NX SHAs
-        run: |
-          HEAD="${{ gitea.sha }}"
-          if [ "${{ gitea.event_name }}" = "pull_request" ]; then
-            BASE="${{ gitea.event.pull_request.base.sha }}"
-          else
-            BASE=$(git rev-parse HEAD~1 2>/dev/null || git rev-list --max-parents=0 HEAD)
-          fi
-          echo "NX_BASE=$BASE" >> $GITHUB_ENV
-          echo "NX_HEAD=$HEAD" >> $GITHUB_ENV
-
-      - name: Restore NX cache
-        uses: actions/cache@v3
-        with:
-          path: .nx/cache
-          key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-${{ gitea.sha }}
-          restore-keys: |
-            nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-
-            nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
-            nx-${{ runner.os }}-
-
-      - name: Build affected
-        run: pnpm nx affected --target=build --base=$NX_BASE --head=$NX_HEAD --parallel=1
+      - name: Build all
+        run: pnpm nx run-many --target=build --all --parallel=1
 
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4

@@ -8,7 +8,6 @@ on:
 
 env:
   PNPM_VERSION: '10'
-  NX_PARALLEL: '2'
 
 jobs:
   test:
@@ -41,13 +40,11 @@ jobs:
           fi
           echo "NX_BASE=$BASE" >> $GITHUB_ENV
           echo "NX_HEAD=$HEAD" >> $GITHUB_ENV
-          echo "NX_BASE=$BASE  NX_HEAD=$HEAD"
 
       - name: Restore NX cache
         uses: actions/cache@v3
         with:
           path: .nx/cache
-          # include nx version in key to bust cache on nx upgrades
           key: nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-${{ gitea.sha }}
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('nx.json') }}-
@@ -55,14 +52,7 @@ jobs:
             nx-${{ runner.os }}-
 
       - name: Test affected
-        run: |
-          pnpm nx affected \
-            --target=test \
-            --base=$NX_BASE \
-            --head=$NX_HEAD \
-            --parallel=$NX_PARALLEL \
-            --ci \
-            --passWithNoTests
+        run: pnpm nx affected --target=test --base=$NX_BASE --head=$NX_HEAD --parallel=1 --ci --passWithNoTests
 
       - name: Upload coverage
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4
@@ -103,7 +93,6 @@ jobs:
           fi
           echo "NX_BASE=$BASE" >> $GITHUB_ENV
           echo "NX_HEAD=$HEAD" >> $GITHUB_ENV
-          echo "NX_BASE=$BASE  NX_HEAD=$HEAD"
 
       - name: Restore NX cache
         uses: actions/cache@v3
@@ -116,14 +105,7 @@ jobs:
             nx-${{ runner.os }}-
 
       - name: Build affected
-        # --max-workers is NX-level only, NOT passed through to executors
-        # Angular and NestJS builders don't accept --max-workers
-        run: |
-          pnpm nx affected \
-            --target=build \
-            --base=$NX_BASE \
-            --head=$NX_HEAD \
-            --parallel=$NX_PARALLEL
+        run: pnpm nx affected --target=build --base=$NX_BASE --head=$NX_HEAD --parallel=1
 
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4

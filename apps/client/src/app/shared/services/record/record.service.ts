@@ -40,7 +40,7 @@ export class RecordService {
 	private readonly dialogService = inject(TuiDialogService);
 	private readonly cacheService = inject(CacheService);
 
-	private readonly worker = new Worker(new URL('./csv.worker', import.meta.url));
+	// private readonly worker = new Worker(new URL('./csv.worker', import.meta.url));
 
 	private readonly queryParamsSubject = new Subject<Params>();
 	private readonly createOrUpdateSubject = new Subject<{ component: PolymorpheusComponent<unknown>; record: IRecord | null }>();
@@ -64,16 +64,16 @@ export class RecordService {
 		}),
 	);
 
-	private readonly uploadImports$ = fromEvent<MessageEvent<IWorker<IRecord[]>>>(this.worker, 'message').pipe(
-		filter((event) => event.data.message === 'csv'),
-		map((event) => event.data.data),
-		switchMap((records) => {
-			const requests$ = records.map((record) => this.http.post<IRecordDto>(`${environment.baseUrl}/record`, mapRecordToDto(record)));
-			return requests$.length ? forkJoin(requests$) : of([]);
-		}),
-		map((dtos) => dtos.map((dto) => mapDtoToRecord(dto))),
-		switchMap((records) => from(records)),
-	);
+	// private readonly uploadImports$ = fromEvent<MessageEvent<IWorker<IRecord[]>>>(this.worker, 'message').pipe(
+	// 	filter((event) => event.data.message === 'csv'),
+	// 	map((event) => event.data.data),
+	// 	switchMap((records) => {
+	// 		const requests$ = records.map((record) => this.http.post<IRecordDto>(`${environment.baseUrl}/record`, mapRecordToDto(record)));
+	// 		return requests$.length ? forkJoin(requests$) : of([]);
+	// 	}),
+	// 	map((dtos) => dtos.map((dto) => mapDtoToRecord(dto))),
+	// 	switchMap((records) => from(records)),
+	// );
 
 	private readonly read$ = combineLatest([this.readSubject.pipe(startWith(void 0)), this.queryParamsSubject]).pipe(
 		switchMap(([, queryParams]) => {
@@ -115,7 +115,7 @@ export class RecordService {
 				isNew ? ({ type: 'create', value: record } as TCrud<IRecord, 'create'>) : ({ type: 'update', value: record } as TCrud<IRecord, 'update'>),
 			),
 		),
-		this.uploadImports$.pipe(map((value) => ({ type: 'create', value }) as TCrud<IRecord, 'create'>)),
+		// this.uploadImports$.pipe(map((value) => ({ type: 'create', value }) as TCrud<IRecord, 'create'>)),
 		this.read$.pipe(map((value) => ({ type: 'read', value: value.data.map((dto) => mapDtoToRecord(dto)) }) as TCrud<IRecord[], 'read'>)),
 		this.delete$.pipe(map((value) => ({ type: 'delete', value }) as TCrud<IRecord, 'delete'>)),
 		this.deleteSelected$.pipe(map((value) => ({ type: 'delete', value }) as TCrud<IRecord, 'delete'>)),
@@ -158,7 +158,8 @@ export class RecordService {
 	}
 
 	public importCsv(file: File) {
-		this.worker.postMessage({ message: 'csv', data: file } satisfies IWorker<File>);
+		console.error('Method not implemented');
+		// this.worker.postMessage({ message: 'csv', data: file } satisfies IWorker<File>);
 	}
 
 	public deleteSelectedRecords(records: IRecord[]) {

@@ -76,7 +76,7 @@ jobs:
 
       - name: Build all
         # run: pnpm nx run-many --target=build --all --parallel=1
-        run: pnpm nx run data-pulse:build
+        run: pnpm nx run client:build
 
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4

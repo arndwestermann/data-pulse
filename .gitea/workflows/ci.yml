@@ -75,7 +75,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build all
-        run: pnpm nx run-many --target=build --all --parallel=1 --verbose
+        run: NODE_OPTIONS=--max-old-space-size=2048 pnpm nx run client:build:production
 
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4

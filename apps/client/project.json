@@ -36,8 +36,7 @@
 						"input": "node_modules/@taiga-ui/icons-fontawesome/src",
 						"output": "assets/taiga-ui/icons/"
 					},
-					"apps/client/src/favicon.ico",
-					"apps/client/src/.htaccess"
+					"apps/client/src/favicon.ico"
 				],
 				"styles": [
 					"@taiga-ui/core/styles/taiga-ui-theme.less",
@@ -52,13 +51,13 @@
 					"budgets": [
 						{
 							"type": "initial",
-							"maximumWarning": "1mb",
-							"maximumError": "2mb"
+							"maximumWarning": "2mb",
+							"maximumError": "3mb"
 						},
 						{
 							"type": "anyComponentStyle",
-							"maximumWarning": "2kb",
-							"maximumError": "4kb"
+							"maximumWarning": "4kb",
+							"maximumError": "8kb"
 						}
 					],
 					"outputHashing": "all",

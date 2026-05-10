@@ -15,7 +15,6 @@
 		"skipDefaultLibCheck": true,
 		"baseUrl": ".",
 		"paths": {
-			"@arndwestermann/observable-webworker": ["libs/observable-webworker/src/index.ts"],
 			"@arndwestermann/common": ["libs/common/src/index.ts"]
 		}
 	},

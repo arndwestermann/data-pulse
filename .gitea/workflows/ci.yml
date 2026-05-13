@@ -5,6 +5,7 @@ on:
   push:
     branches: [main, dev]
   pull_request:
+  workflow_dispatch:
 
 env:
   PNPM_VERSION: '10'
@@ -88,7 +89,7 @@ jobs:
     name: Deploy via SSH
     runs-on: node-24
     needs: build
-    if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master')
+    if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master') || gitea.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: sh
@@ -120,6 +121,7 @@ jobs:
 
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
             cd $DEPLOY_PATH
+            pwd
             # pm2 restart api
             # nginx -s reload
           EOF

@@ -89,7 +89,7 @@ jobs:
     name: Deploy via SSH
     runs-on: node-24
     needs: build
-    if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master') || gitea.event_name == 'workflow_dispatch'
+    # if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master') || gitea.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: sh

@@ -10,43 +10,43 @@ env:
   PNPM_VERSION: '10'
 
 jobs:
-  # test:
-  #   name: Test
-  #   runs-on: node-24
-  #   defaults:
-  #     run:
-  #       shell: sh
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #
-  #     - name: Setup pnpm
-  #       uses: pnpm/action-setup@v4
-  #       with:
-  #         version: ${{ env.PNPM_VERSION }}
-  #
-  #     - name: Get pnpm store path
-  #       run: echo "PNPM_STORE=$(pnpm store path)" >> $GITHUB_ENV
-  #
-  #     - name: Cache pnpm store
-  #       uses: actions/cache@v3
-  #       with:
-  #         path: ${{ env.PNPM_STORE }}
-  #         key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-  #         restore-keys: pnpm-${{ runner.os }}-
-  #
-  #     - name: Install dependencies
-  #       run: pnpm install --frozen-lockfile
-  #
-  #     - name: Test all
-  #       run: pnpm nx run-many --target=test --all --parallel=1 --ci --passWithNoTests
+  test:
+    name: Test
+    runs-on: node-24
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store path
+        run: echo "PNPM_STORE=$(pnpm store path)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test all
+        run: pnpm nx run-many --target=test --all --parallel=1 --ci --passWithNoTests
 
   build:
     name: Build
     runs-on: node-24
-    # needs: test
+    needs: test
     defaults:
       run:
         shell: sh
@@ -75,7 +75,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build all
-        run: pnpm nx run client:build:production --verbose 2>&1
+        run: pnpm nx run-many -t build
 
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4

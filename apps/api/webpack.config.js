@@ -14,7 +14,7 @@ module.exports = {
 			assets: [
 				'./src/assets',
 				{
-					input: '../../docker',
+					input: 'docker',
 					output: '.',
 					glob: 'start.sh',
 				},

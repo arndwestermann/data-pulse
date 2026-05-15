@@ -87,7 +87,7 @@ jobs:
 
   deploy:
     name: deploy
-    runs-on: precessgmbh/alpine-rsync:alpine-rsync-latest
+    runs-on: alpine-rsync
     needs: build
     # if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master') || gitea.event_name == 'workflow_dispatch'
     defaults:

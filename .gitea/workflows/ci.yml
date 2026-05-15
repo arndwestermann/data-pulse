@@ -101,7 +101,7 @@ jobs:
           path: dist/
 
       - name: Install rsync
-        run: apt-get install -y rsync
+        run: apt-get update && apt-get install -y rsync
 
       - name: Deploy to server
         env:

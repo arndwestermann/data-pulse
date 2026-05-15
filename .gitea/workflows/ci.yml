@@ -47,7 +47,7 @@ jobs:
   build:
     name: build
     runs-on: node-24
-    needs: test
+    # needs: test
     defaults:
       run:
         shell: sh

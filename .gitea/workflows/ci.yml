@@ -87,7 +87,7 @@ jobs:
 
   deploy:
     name: deploy
-    runs-on: alpine-rsync
+    runs-on: node-24
     needs: build
     # if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master') || gitea.event_name == 'workflow_dispatch'
     defaults:
@@ -100,29 +100,32 @@ jobs:
           name: dist-${{ gitea.sha }}
           path: dist/
 
-      - name: Deploy to server
-        env:
-          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
-          SSH_USER: ${{ secrets.DEPLOY_USER }}
-          SSH_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
+      - name: Check OS
+        run: cat /etc/os-release
 
-          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
-          ls -al
-
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
-            dist/ \
-            "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
-
-          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
-            cd $DEPLOY_PATH
-            ls -al
-          EOF
-
-          rm -f ~/.ssh/deploy_key
+      # - name: Deploy to server
+      #   env:
+      #     SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      #     SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+      #     SSH_USER: ${{ secrets.DEPLOY_USER }}
+      #     SSH_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+      #     DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      #   run: |
+      #     mkdir -p ~/.ssh
+      #     echo "$SSH_KEY" > ~/.ssh/deploy_key
+      #     chmod 600 ~/.ssh/deploy_key
+      #
+      #     ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+      #     ls -al
+      #
+      #     rsync -az --delete \
+      #       -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
+      #       dist/ \
+      #       "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
+      #
+      #     ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
+      #       cd $DEPLOY_PATH
+      #       ls -al
+      #     EOF
+      #
+      #     rm -f ~/.ssh/deploy_key

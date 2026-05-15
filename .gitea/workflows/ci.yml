@@ -123,7 +123,7 @@ jobs:
             dist/apps \
             "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
 
-          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << EOF
             cd $DEPLOY_PATH
             pwd
           EOF

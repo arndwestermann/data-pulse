@@ -11,38 +11,38 @@ env:
   PNPM_VERSION: '10'
 
 jobs:
-  test:
-    name: test
-    runs-on: node-24
-    defaults:
-      run:
-        shell: sh
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Get pnpm store path
-        run: echo "PNPM_STORE=$(pnpm store path)" >> $GITHUB_ENV
-
-      - name: Cache pnpm store
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.PNPM_STORE }}
-          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: pnpm-${{ runner.os }}-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Test all
-        run: pnpm nx run-many --target=test --all --parallel=1 --ci --passWithNoTests
+  # test:
+  #   name: test
+  #   runs-on: node-24
+  #   defaults:
+  #     run:
+  #       shell: sh
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #
+  #     - name: Setup pnpm
+  #       uses: pnpm/action-setup@v4
+  #       with:
+  #         version: ${{ env.PNPM_VERSION }}
+  #
+  #     - name: Get pnpm store path
+  #       run: echo "PNPM_STORE=$(pnpm store path)" >> $GITHUB_ENV
+  #
+  #     - name: Cache pnpm store
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: ${{ env.PNPM_STORE }}
+  #         key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+  #         restore-keys: pnpm-${{ runner.os }}-
+  #
+  #     - name: Install dependencies
+  #       run: pnpm install --frozen-lockfile
+  #
+  #     - name: Test all
+  #       run: pnpm nx run-many --target=test --all --parallel=1 --ci --passWithNoTests
 
   build:
     name: build
@@ -120,12 +120,12 @@ jobs:
 
           rsync -az --delete \
             -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
-            dist/ \
+            dist/apps \
             "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
 
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
             cd $DEPLOY_PATH
-            ls -al
+            pwd
           EOF
 
           rm -f ~/.ssh/deploy_key

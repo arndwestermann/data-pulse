@@ -121,6 +121,8 @@ jobs:
           rsync -az --delete \
             --exclude='.env' \
             --exclude='.env.*' \
+            --exclude='compose.yml' \
+            --exclude='nginx.conf' \
             -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
             dist/apps/ \
             "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"

@@ -10,7 +10,7 @@
 			"options": {
 				"command": "webpack-cli build",
 				"args": ["node-env=production"],
-				"assets": ["apps/api/src/start.sh"]
+				"assets": ["docker/start.sh"]
 			},
 			"configurations": {
 				"development": {

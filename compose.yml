@@ -76,6 +76,9 @@ services:
       - data-pulse
 networks:
   data-pulse:
+  caddy:
+    external: true
+
 volumes:
   caddy_data:
   caddy_config:

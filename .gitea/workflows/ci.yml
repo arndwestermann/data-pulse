@@ -12,7 +12,7 @@ env:
 
 jobs:
   test:
-    name: Test
+    name: test
     runs-on: node-24
     defaults:
       run:
@@ -45,7 +45,7 @@ jobs:
         run: pnpm nx run-many --target=test --all --parallel=1 --ci --passWithNoTests
 
   build:
-    name: Build
+    name: build
     runs-on: node-24
     needs: test
     defaults:
@@ -86,8 +86,8 @@ jobs:
           retention-days: 1
 
   deploy:
-    name: Deploy
-    runs-on: node-24
+    name: deploy
+    runs-on: precessgmbh/alpine-rsync:alpine-rsync-latest
     needs: build
     # if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master') || gitea.event_name == 'workflow_dispatch'
     defaults:
@@ -108,24 +108,21 @@ jobs:
           SSH_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
         run: |
-          # mkdir -p ~/.ssh
-          # echo "$SSH_KEY" > ~/.ssh/deploy_key
-          # chmod 600 ~/.ssh/deploy_key
-          #
-          # ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
           ls -al
 
-          # rsync -az --delete \
-          #   -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
-          #   dist/ \
-          #   "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
+            dist/ \
+            "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
 
-          # ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
-          #   cd $DEPLOY_PATH
-          #   pwd
-          #   ls -al
-          #   # pm2 restart api
-          #   # nginx -s reload
-          # EOF
-          #
-          # rm -f ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << 'EOF'
+            cd $DEPLOY_PATH
+            ls -al
+          EOF
+
+          rm -f ~/.ssh/deploy_key

@@ -29,9 +29,9 @@ services:
       - APP_USER=${UID}
       - APP_GROUP=${GID}
     volumes:
-      - ./api/current:/app
+      - ./api:/app
       - ./api/.env:/app/.env
-      - ./start.sh:/docker-entrypoint.d/start.sh:ro
+      - ./api/start.sh:/docker-entrypoint.d/start.sh:ro
     command: ['/bin/bash', '/docker-entrypoint.d/start.sh']
     networks:
       - caddy
@@ -59,7 +59,7 @@ services:
     networks:
       - caddy
     volumes:
-      - ./client/browser/current:/usr/share/nginx/html
+      - ./client/browser:/usr/share/nginx/html
       - ./nginx.conf:/etc/nginx/nginx.conf
 
 networks:

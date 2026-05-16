@@ -78,6 +78,9 @@ jobs:
       - name: Build all
         run: pnpm nx run-many -t build
 
+      - name: Compile migrations
+        run: pnpm nx run-many -t migration:compile
+
       - name: Upload dist
         uses: https://github.com/christopherHX/gitea-upload-artifact@v4
         with:

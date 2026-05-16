@@ -18,6 +18,11 @@ module.exports = {
 					output: '.',
 					glob: 'start.sh',
 				},
+				{
+					input: '../..',
+					output: '.',
+					glob: 'pnpm-workspace.yaml',
+				},
 			],
 			optimization: false,
 			outputHashing: 'none',

@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  PNPM_VERSION: '10'
+  PNPM_VERSION: '11'
 
 jobs:
   # test:

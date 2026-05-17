@@ -12,7 +12,7 @@ import { transition as d3Transition } from 'd3-transition';
 				[attr.fill]="fill()"
 				rx="3"
 				[attr.stroke]="'#000'"
-				[attr.stroke-width]="isString() ? 1 : 0"
+				[attr.stroke-width]="isString() ? 1 : 0.5"
 				[attr.width]="width()"
 				[attr.height]="height()"
 				class="cell" />

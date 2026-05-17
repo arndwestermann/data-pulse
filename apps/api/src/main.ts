@@ -1,7 +1,8 @@
-import { Logger, NestApplicationOptions } from '@nestjs/common';
+import { Logger, NestApplicationOptions, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app/app.module';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { readFileSync } from 'fs';
+import { AppModule } from './app/app.module';
 
 async function bootstrap() {
 	const certPath = process.env.SSL_CERTIFICATE_PATH;
@@ -19,11 +20,17 @@ async function bootstrap() {
 		serverOptions = { httpsOptions };
 	}
 
-	const app = await NestFactory.create(AppModule, serverOptions);
+	const app = await NestFactory.create<NestExpressApplication>(AppModule, serverOptions);
 	const globalPrefix = 'api';
 	app.setGlobalPrefix(globalPrefix);
+	app.useGlobalPipes(new ValidationPipe({ transform: true }));
+	app.set('query parser', 'extended');
 	app.enableCors({
 		origin: allowedOrigins,
+	});
+	app.enableVersioning({
+		type: VersioningType.URI,
+		prefix: '',
 	});
 
 	const port = process.env.PORT || 3000;

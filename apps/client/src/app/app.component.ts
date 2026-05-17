@@ -16,13 +16,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 			</tui-loader>
 		</tui-root>
 	`,
-	styles: `
-		@reference '../styles.css';
-
-		:host {
-			@apply block h-full;
-		}
-	`,
+	// TODO: Check how to fix `Can't resolve ../styles.css in tests when styles inline`
+	styleUrl: './app.component.css',
 })
 export class AppComponent implements OnInit {
 	private readonly theme = inject(TuiThemeColorService);

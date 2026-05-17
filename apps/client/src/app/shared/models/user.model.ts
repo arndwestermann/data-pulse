@@ -17,3 +17,5 @@ export interface Permissions {
 }
 
 export type UpdateUser = Partial<IUser> & { password?: string };
+
+export type TUserForm = Omit<IUser, 'uuid' | 'roles'> & { uuid?: string; password: string; confirmPassword: string };

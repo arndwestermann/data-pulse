@@ -1,0 +1,136 @@
+name: CI
+run-name: '${{ gitea.actor }} → ${{ gitea.ref_name }}'
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PNPM_VERSION: '11'
+
+jobs:
+  test:
+    name: test
+    runs-on: node-24
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store path
+        run: echo "PNPM_STORE=$(pnpm store path)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test all
+        run: pnpm nx run-many --target=test --all --parallel=1 --ci --passWithNoTests
+
+  build:
+    name: build
+    runs-on: node-24
+    needs: test
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store path
+        run: echo "PNPM_STORE=$(pnpm store path)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all
+        run: pnpm nx run-many -t build
+
+      - name: Compile migrations
+        run: pnpm nx run-many -t migration:compile
+
+      - name: Upload dist
+        uses: https://github.com/christopherHX/gitea-upload-artifact@v4
+        with:
+          name: dist-${{ gitea.sha }}
+          path: dist/
+          retention-days: 1
+
+  deploy:
+    name: deploy
+    runs-on: node-24
+    needs: build
+    if: (gitea.event_name == 'push' && gitea.ref == 'refs/heads/main') || gitea.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - name: Download dist
+        uses: https://github.com/christopherHX/gitea-download-artifact@main
+        with:
+          name: dist-${{ gitea.sha }}
+          path: dist/
+
+      - name: Install rsync
+        run: apt-get update && apt-get install -y rsync
+
+      - name: Deploy to server
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          SSH_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh-keyscan -p "$SSH_PORT" -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          ls -al
+
+          rsync -az --delete \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='compose.yml' \
+            -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
+            dist/apps/ \
+            "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
+
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << EOF
+            docker compose down && docker compose up -d
+          EOF
+
+          rm -f ~/.ssh/deploy_key

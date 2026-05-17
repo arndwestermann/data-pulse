@@ -1,0 +1,29 @@
+---
+name: data-pulse
+services:
+  db:
+    image: mariadb:11.6.2-noble
+    restart: unless-stopped
+    container_name: db
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ALLOW_EMPTY_PASSWORD: no
+    ports:
+      - 3306:3306
+    volumes:
+      - db-data-pulse:/var/lib/mysql
+    networks:
+      - data-pulse
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+networks:
+  data-pulse:
+volumes:
+  db-data-pulse:

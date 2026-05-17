@@ -10,7 +10,7 @@ export default defineConfig({
 	plugins: [angular(), nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
 	// Uncomment this if you are using workers.
 	worker: {
-		plugins: [nxViteTsPaths()],
+		plugins: () => [nxViteTsPaths()],
 	},
 	test: {
 		watch: false,

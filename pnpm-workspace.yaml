@@ -1,0 +1,13 @@
+allowBuilds:
+  '@nestjs/core': true
+  '@parcel/watcher': false
+  '@swc/core': true
+  '@tailwindcss/oxide': true
+  bcrypt: true
+  core-js: false
+  esbuild: true
+  less: false
+  lmdb: false
+  msgpackr-extract: false
+  nx: true
+  unrs-resolver: false

@@ -1,8 +1,8 @@
-import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { customError, RootFieldContext, SchemaPath } from '@angular/forms/signals';
 
-export const passwordMatchesValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
-	const password = control.get('password')?.value;
-	const confirmPassword = control.get('confirmPassword')?.value;
-
-	return password === confirmPassword ? null : { mustMatch: true };
-};
+export function passwordMatchesValidator<T extends string | null>({ value, valueOf }: RootFieldContext<T>, confirmPassword: SchemaPath<T>) {
+	if (value() !== valueOf(confirmPassword)) {
+		return customError({ kind: 'mustMatch' });
+	}
+	return undefined;
+}

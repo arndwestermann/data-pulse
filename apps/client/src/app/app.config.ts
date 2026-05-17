@@ -1,19 +1,12 @@
-import {
-	ApplicationConfig,
-	isDevMode,
-	importProvidersFrom,
-	provideExperimentalZonelessChangeDetection,
-	inject,
-	provideAppInitializer,
-} from '@angular/core';
+import { ApplicationConfig, isDevMode, importProvidersFrom, inject, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import { provideAnimations } from '@angular/platform-browser/animations';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { appRoutes } from './app.routes';
 import { provideHttpClient, withInterceptors, withInterceptorsFromDi } from '@angular/common/http';
 import { TranslocoHttpLoader } from './transloco-loader';
 import { provideTransloco, TranslocoService } from '@jsverse/transloco';
-import { NG_EVENT_PLUGINS } from '@taiga-ui/event-plugins';
+import { provideEventPlugins } from '@taiga-ui/event-plugins';
 import { TuiDialog } from '@taiga-ui/core';
 import { TUI_LANGUAGE, TUI_GERMAN_LANGUAGE, TUI_ENGLISH_LANGUAGE } from '@taiga-ui/i18n';
 
@@ -22,6 +15,8 @@ import localeDeDE from '@angular/common/locales/de';
 import { STORAGE_TOKEN } from './shared/services';
 import { accessTokenInterceptor, LOADING_INTERCEPTOR_PROVIDER } from './shared/interceptors';
 import { distinctUntilChanged, map } from 'rxjs';
+import { provideSignalFormsConfig } from '@angular/forms/signals';
+import { NG_STATUS_CLASSES } from '@angular/forms/signals/compat';
 
 registerLocaleData(localeEnGB, 'en-GB');
 registerLocaleData(localeDeDE, 'de-DE');
@@ -33,8 +28,11 @@ export function initializeApplication(translocoService: TranslocoService): () =>
 export const appConfig: ApplicationConfig = {
 	providers: [
 		provideAnimations(),
-		provideExperimentalZonelessChangeDetection(),
-		provideRouter(appRoutes),
+		provideZonelessChangeDetection(),
+		provideSignalFormsConfig({
+			classes: NG_STATUS_CLASSES,
+		}),
+		provideRouter(appRoutes, withComponentInputBinding()),
 		provideHttpClient(withInterceptorsFromDi(), withInterceptors([accessTokenInterceptor])),
 		provideTransloco({
 			config: {
@@ -46,7 +44,7 @@ export const appConfig: ApplicationConfig = {
 			loader: TranslocoHttpLoader,
 		}),
 		importProvidersFrom(TuiDialog),
-		NG_EVENT_PLUGINS,
+		provideEventPlugins(),
 		{ provide: STORAGE_TOKEN, useValue: localStorage },
 		provideAppInitializer(() => {
 			const initializerFn = initializeApplication(inject(TranslocoService));

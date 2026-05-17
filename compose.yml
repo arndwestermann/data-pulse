@@ -1,0 +1,85 @@
+---
+name: data-pulse
+services:
+  caddy:
+    image: caddy:2.10.2
+    container_name: caddy
+    ports:
+      - 80:80
+      - 443:443
+      - 3000:3000
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - data-pulse
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11.6.2-noble
+    restart: unless-stopped
+    container_name: db
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ALLOW_EMPTY_PASSWORD: no
+    ports:
+      - 3307:3306
+    volumes:
+      - db-data-pulse:/var/lib/mysql
+    networks:
+      - data-pulse
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    container_name: api
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    ports:
+      - 3001:3000
+    networks:
+      - data-pulse
+
+  client:
+    build:
+      context: .
+      dockerfile: client.Dockerfile
+      args:
+        - ENVIRONMENT=${ENVIRONMENT}
+        - NGINX_CONFIG=${NGINX_CONFIG}
+      target: experimental
+    container_name: client
+    depends_on:
+      db:
+        condition: service_started
+      api:
+        condition: service_started
+    ports:
+      - 81:80
+      - 444:443
+    networks:
+      - data-pulse
+networks:
+  data-pulse:
+  caddy:
+    external: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db-data-pulse:

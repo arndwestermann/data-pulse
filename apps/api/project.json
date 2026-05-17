@@ -8,20 +8,18 @@
 		"build": {
 			"executor": "nx:run-commands",
 			"options": {
-				"command": "webpack-cli build",
-				"args": ["node-env=production"],
-				"assets": ["apps/api/src/startup.sh"]
+				"command": "webpack-cli build --node-env=production --config apps/api/webpack.config.js"
 			},
 			"configurations": {
 				"development": {
-					"args": ["node-env=development"]
+					"command": "webpack-cli build --node-env=development --config apps/api/webpack.config.js"
 				}
 			}
 		},
 		"serve": {
 			"executor": "@nx/js:node",
 			"defaultConfiguration": "development",
-			"dependsOn": ["build"],
+			"dependsOn": ["build", "compose:up"],
 			"options": {
 				"buildTarget": "api:build",
 				"runBuildTargetDependencies": false
@@ -40,6 +38,80 @@
 			"outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
 			"options": {
 				"jestConfig": "apps/api/jest.config.ts"
+			}
+		},
+		"cp-env": {
+			"dependsOn": ["build"],
+			"command": "cp ./apps/api/.env ./dist/apps/api/.env"
+		},
+		"migration:compile": {
+			"command": "tsc -p apps/api/tsconfig.migration.json",
+			"outputs": ["{workspaceRoot}/dist/apps/api/database"]
+		},
+		"migration:generate": {
+			"executor": "nx:run-commands",
+			"options": {
+				"commands": [
+					{
+						"command": "nx run api:cp-env",
+						"forwardAllArgs": false
+					},
+					{
+						"command": "nx run api:migration:compile",
+						"forwardAllArgs": false
+					},
+					"PRODUCTION=false ts-node -r tsconfig-paths/register -P apps/api/tsconfig.app.json node_modules/typeorm/cli.js migration:generate apps/api/src/database/migrations/{args.name} -d apps/api/src/database/database.config.ts"
+				],
+				"parallel": false
+			}
+		},
+		"migration:create": {
+			"executor": "nx:run-commands",
+			"options": {
+				"commands": [
+					"PRODUCTION=false ts-node -P apps/api/tsconfig.app.json node_modules/typeorm/cli.js migration:create apps/api/src/database/migrations/{args.name}"
+				],
+				"parallel": false
+			}
+		},
+		"migration:up": {
+			"dependsOn": ["cp-env"],
+			"executor": "nx:run-commands",
+			"options": {
+				"commands": ["nx run api:migration:compile", "PRODUCTION=true typeorm -d dist/apps/api/database/database.config.js migration:run"],
+				"parallel": false
+			}
+		},
+		"migration:down": {
+			"dependsOn": ["cp-env"],
+			"executor": "nx:run-commands",
+			"options": {
+				"commands": ["nx run api:migration:compile", "PRODUCTION=true typeorm -d dist/apps/api/database/database.config.js migration:revert"],
+				"parallel": false
+			}
+		},
+		"compose:up": {
+			"executor": "nx:run-commands",
+			"defaultConfiguration": "development",
+			"configurations": {
+				"development": {
+					"command": "docker compose -f apps/api/docker-compose.yml up -d --remove-orphans"
+				},
+				"production": {
+					"command": "docker compose -f apps/api/docker-compose.yml --profile production up -d --remove-orphans"
+				}
+			}
+		},
+		"compose:down": {
+			"executor": "nx:run-commands",
+			"defaultConfiguration": "development",
+			"configurations": {
+				"development": {
+					"command": "docker compose -f ./apps/api/docker-compose.yml down"
+				},
+				"production": {
+					"command": "docker compose -f ./apps/api/docker-compose.yml --profile production down"
+				}
 			}
 		}
 	}

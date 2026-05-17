@@ -46,6 +46,8 @@ migrations.json
 .env
 /ssl
 nginx.conf
+Caddyfile
+snippets
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*

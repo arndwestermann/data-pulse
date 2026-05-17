@@ -1,0 +1,73 @@
+---
+name: data-pulse
+services:
+  data-pulse-db:
+    image: mariadb:11.6.2-noble
+    restart: unless-stopped
+    container_name: data-pulse-db
+    env_file:
+      - ./api/.env
+    environment:
+      - TZ=${TZ}
+      - MARIADB_ALLOW_EMPTY_PASSWORD=no
+    volumes:
+      - db-data-pulse:/var/lib/mysql
+    networks:
+      - data-pulse
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  data-pulse-api:
+    image: node:24.15.0-slim
+    container_name: data-pulse-api
+    working_dir: /app
+    env_file:
+      - ./api/.env
+    environment:
+      - TZ=${TZ}
+      - APP_USER=${UID}
+      - APP_GROUP=${GID}
+    volumes:
+      - ./api:/app
+      - ./api/.env:/app/.env
+      - ./api/start.sh:/docker-entrypoint.d/start.sh:ro
+    command: ['/bin/bash', '/docker-entrypoint.d/start.sh']
+    networks:
+      - caddy
+      - data-pulse
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "require(''http'').get(''http://localhost:3000/api/health'', (res) => process.exit(res.statusCode === 418 ? 0 : 1)).on(''error'', () => process.exit(1))"',
+        ]
+      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      data-pulse-db:
+        condition: service_healthy
+        restart: true
+  data-pulse:
+    image: nginx
+    container_name: data-pulse
+    environment:
+      - TZ=${TZ}
+    networks:
+      - caddy
+    volumes:
+      - ./client/browser:/usr/share/nginx/html
+      - ./client/browser/nginx.prod.conf:/etc/nginx/nginx.conf
+
+networks:
+  data-pulse:
+  caddy:
+    external: true
+
+volumes:
+  db-data-pulse:

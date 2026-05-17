@@ -1,0 +1,7 @@
+http://localhost {
+    reverse_proxy api:3000
+}
+
+http://localhost:4200 {
+    reverse_proxy client:80
+}

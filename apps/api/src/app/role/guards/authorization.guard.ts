@@ -35,9 +35,9 @@ export class AuthorizationGuard implements CanActivate {
 		if (requestType === 'GET' && request.params.uuid) return hasPermission || hasRole;
 
 		// Find better way to prevent user from overwriting own roles
-		if ('roles' in request.body && requestType === 'PATCH') return hasRole;
+		if (requestType === 'PATCH' && 'roles' in request.body) return hasRole;
 
-		if (request.url.includes('user') && requestType === 'PATCH') return (user.sub === request.params.uuid && hasPermission) || hasRole;
+		if (requestType === 'PATCH' && request.url.includes('user')) return (user.sub === request.params.uuid && hasPermission) || hasRole;
 
 		return hasPermission || hasRole;
 	}

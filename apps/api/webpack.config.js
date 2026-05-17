@@ -11,7 +11,19 @@ module.exports = {
 			compiler: 'tsc',
 			main: './src/main.ts',
 			tsConfig: './tsconfig.app.json',
-			assets: ['./src/assets'],
+			assets: [
+				'./src/assets',
+				{
+					input: 'docker',
+					output: '.',
+					glob: 'start.sh',
+				},
+				{
+					input: '../..',
+					output: '.',
+					glob: 'pnpm-workspace.yaml',
+				},
+			],
 			optimization: false,
 			outputHashing: 'none',
 			generatePackageJson: true,

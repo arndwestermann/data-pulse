@@ -11,7 +11,9 @@
 		"markAsCorrect": "Mark as correct",
 		"markAsIncorrect": "Mark as incorrect",
 		"select": "Select",
-		"unselect": "Unselect"
+		"unselect": "Unselect",
+		"fromTo": "From - To",
+		"chooseRange": "Choose range"
 	},
 	"routes": {
 		"records": "Records",
@@ -31,7 +33,6 @@
 	"heatmap": {
 		"specialty": "Specialty",
 		"total": "Total",
-		"chooseRange": "Choose range",
 		"admissions": "Ad",
 		"discharges": "Dis"
 	},
@@ -75,9 +76,10 @@
 		"caution": "Caution"
 	},
 	"validation": {
-		"required": "{{ field }} is required",
+		"required": "Required",
 		"minLength": "Password must be at least 8 characters",
 		"pattern": "Password must have at least 1 number and 1 special character",
+		"email": "Must be a valid E-Mail",
 		"mustMatch": "Passwords must match",
 		"idExists": "Id already exists"
 	}

@@ -1,4 +1,20 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Logger, Res, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Post,
+	Body,
+	Patch,
+	Param,
+	Delete,
+	Logger,
+	Res,
+	HttpStatus,
+	UseGuards,
+	Query,
+	BadRequestException,
+	InternalServerErrorException,
+	Version,
+} from '@nestjs/common';
 import { RecordService } from './record.service';
 import { CreateRecordDto } from './dto/create-record.dto';
 import { UpdateRecordDto } from './dto/update-record.dto';
@@ -10,11 +26,13 @@ import { mapRecordToResponse } from '../shared';
 import { Response } from 'express';
 import { AuthorizationGuard } from '../role/guards/authorization.guard';
 import { Permission } from '../shared/decorators';
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, IPage, isError, KeyValue } from '@arndwestermann/common';
+import { QueryOptions } from '../shared/models';
 
 @UseGuards(AuthorizationGuard)
 @Controller('record')
 export class RecordController {
-	private readonly logger = new Logger('RecordController');
+	private readonly _ = new Logger('RecordController');
 	constructor(private readonly recordService: RecordService) {}
 
 	@Permission({ ressource: 'record', actions: ['create'] })
@@ -33,6 +51,59 @@ export class RecordController {
 	@Get()
 	findAll(@User() user: TokenPayload) {
 		return this.recordService.findAll(user.sub);
+	}
+
+	@Version('beta')
+	@Permission({ ressource: 'record', actions: ['read'] })
+	@Get()
+	findAllV2(@Res() response: Response<IPage<IRecordResponse[]>>, @Query() options: QueryOptions, @User() user: TokenPayload) {
+		return this.recordService.findAllV2(user.sub, options).pipe(
+			map((value) => {
+				if (!isError(value)) {
+					return response.status(HttpStatus.OK).send({
+						data: value.data.map(mapRecordToResponse),
+						itemsPerPage: options.size ?? DEFAULT_PAGE_SIZE,
+						page: options.page ?? DEFAULT_PAGE,
+						totalItems: value.count,
+					});
+				}
+
+				switch (value.status) {
+					case HttpStatus.BAD_REQUEST:
+						throw new BadRequestException(value.statusText);
+
+					default:
+						throw new InternalServerErrorException(value.statusText);
+				}
+			}),
+		);
+	}
+
+	// TODO: move to own endpoint, it is currently here because of there is no resource yet for it for the role management
+	@Permission({ ressource: 'record', actions: ['read'] })
+	@Get('heat-map')
+	getHeatmap(@Res() response: Response<IPage<KeyValue<Date, IRecordResponse[][]>[]>>, @Query() options: QueryOptions, @User() user: TokenPayload) {
+		return this.recordService.getHeatmap(user.sub, options).pipe(
+			map((value) => {
+				if (!isError(value)) {
+					const data = value.map((item) => ({ ...item, value: item.value.map((hour) => hour.map(mapRecordToResponse)) }));
+					return response.status(HttpStatus.OK).send({
+						data,
+						itemsPerPage: -1,
+						page: -1,
+						totalItems: data.length,
+					});
+				}
+
+				switch (value.status) {
+					case HttpStatus.BAD_REQUEST:
+						throw new BadRequestException(value.statusText);
+
+					default:
+						throw new InternalServerErrorException(value.statusText);
+				}
+			}),
+		);
 	}
 
 	@Permission({ ressource: 'record', actions: ['read'] })

@@ -36,6 +36,11 @@
 						"input": "node_modules/@taiga-ui/icons-fontawesome/src",
 						"output": "assets/taiga-ui/icons/"
 					},
+					{
+						"glob": "nginx.prod.conf",
+						"input": "docker",
+						"output": "./"
+					},
 					"apps/client/src/favicon.ico"
 				],
 				"styles": [

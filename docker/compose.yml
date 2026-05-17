@@ -24,6 +24,8 @@ services:
     image: node:24.15.0-slim
     container_name: data-pulse-api
     working_dir: /app
+    env_file:
+      - ./api/.env
     environment:
       - TZ=${TZ}
       - APP_USER=${UID}
@@ -60,7 +62,7 @@ services:
       - caddy
     volumes:
       - ./client/browser:/usr/share/nginx/html
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./client/browser/nginx.prod.conf:/etc/nginx/nginx.conf
 
 networks:
   data-pulse:

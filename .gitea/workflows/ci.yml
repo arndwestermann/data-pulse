@@ -92,7 +92,7 @@ jobs:
     name: deploy
     runs-on: node-24
     needs: build
-    # if: gitea.event_name == 'push' && (gitea.ref == 'refs/heads/main' || gitea.ref == 'refs/heads/master') || gitea.event_name == 'workflow_dispatch'
+    if: (gitea.event_name == 'push' && gitea.ref == 'refs/heads/main') || gitea.event_name == 'workflow_dispatch'
     defaults:
       run:
         shell: sh
@@ -125,14 +125,12 @@ jobs:
             --exclude='.env' \
             --exclude='.env.*' \
             --exclude='compose.yml' \
-            --exclude='nginx.conf' \
             -e "ssh -i ~/.ssh/deploy_key -p $SSH_PORT" \
             dist/apps/ \
             "$SSH_USER@$SSH_HOST:$DEPLOY_PATH"
 
           ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << EOF
-            cd $DEPLOY_PATH
-            ls -al
+            docker compose down && docker compose up -d
           EOF
 
           rm -f ~/.ssh/deploy_key

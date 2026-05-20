@@ -20,7 +20,11 @@ export interface IRecord {
 	specialty: Specialty;
 }
 
-export type TRecordForm = Omit<IRecord, 'arrival' | 'leaving'> & { arrival: [TuiDay, TuiTime]; leaving: [TuiDay, TuiTime] | null };
+export type TRecordForm = Omit<IRecord, 'uuid' | 'arrival' | 'leaving'> & {
+	uuid: string | null;
+	arrival: [TuiDay, TuiTime];
+	leaving: [TuiDay, TuiTime] | null;
+};
 
 export const SPECIALTIES = [
 	'internal',

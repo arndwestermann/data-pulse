@@ -128,7 +128,7 @@ export class RecordFormComponent {
 	public readonly specialties = signal(SPECIALTIES);
 
 	public readonly recordModel = signal<TRecordForm>({
-		uuid: this.context.data?.uuid,
+		uuid: this.context.data?.uuid ?? null,
 		id: this.context.data?.id ?? '',
 		arrival: toTuiDayTime(this.context.data?.arrival ?? new Date()),
 		leaving: this.context.data?.leaving ? toTuiDayTime(this.context.data.leaving) : null,
@@ -144,9 +144,10 @@ export class RecordFormComponent {
 		required(schema.arrival);
 
 		validateAsync(schema.id, {
-			params: ({ value }) => {
+			params: ({ value, valueOf }) => {
 				const val = value();
-				if (!val) return undefined;
+				if (valueOf(schema.uuid) ?? !val) return undefined;
+
 				return val;
 			},
 			factory: (id) =>

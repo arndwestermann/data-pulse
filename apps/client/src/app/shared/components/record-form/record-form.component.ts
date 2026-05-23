@@ -9,11 +9,11 @@ import { TuiAutoFocus, TuiDay, TuiTime } from '@taiga-ui/cdk';
 import { TuiChevron, TuiComboBox, TuiDataListWrapper, TuiFilterByInputPipe, TuiInputDateTime, TuiStringifyContentPipe } from '@taiga-ui/kit';
 import { RecordService } from '../../services';
 import { IRecord, SPECIALTIES, Specialty, TRecordForm } from '../../models';
-import { customError, debounce, Field, form, required, submit, validateAsync } from '@angular/forms/signals';
+import { debounce, FormField, form, required, submit, validateAsync } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { toNativeDateTime, toTuiDayTime } from '../../utils';
 
-const angularImports = [ReactiveFormsModule, NgTemplateOutlet, Field];
+const angularImports = [ReactiveFormsModule, NgTemplateOutlet, FormField];
 const thirdPartyImports = [TranslocoDirective];
 const taigaUiImports = [
 	TuiButton,
@@ -66,7 +66,7 @@ const taigaUiImports = [
 							<label tuiLabel> {{ transloco('records.' + label) }}</label>
 							<input
 								tuiInputDateTime
-								[field]="control"
+								[formField]="control"
 								[tuiAutoFocus]="autoFocus ?? false"
 								[min]="label === 'arrival' ? null : minDate()"
 								(focus)="onFocused($event)" />
@@ -79,7 +79,7 @@ const taigaUiImports = [
 					@default {
 						<tui-textfield>
 							<label tuiLabel> {{ transloco('records.' + label) }}</label>
-							<input tuiTextfield [tuiAutoFocus]="autoFocus ?? false" [field]="control" type="text" (keypress)="keyPress($event)" />
+							<input tuiTextfield [tuiAutoFocus]="autoFocus ?? false" [formField]="control" type="text" (keypress)="keyPress($event)" />
 							@for (error of control().errors(); track error.kind) {
 								<tui-error [error]="transloco('validation.' + error.kind)" />
 							}
@@ -160,9 +160,9 @@ export class RecordFormComponent {
 				}),
 			onSuccess: (result: boolean) => {
 				if (!result) {
-					return customError({
+					return {
 						kind: 'idExists',
-					});
+					};
 				}
 				return null;
 			},

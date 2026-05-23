@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, linkedSignal } from '@angular/core';
-import { applyWhen, email, form, minLength, pattern, required, validate, Field, submit } from '@angular/forms/signals';
+import { applyWhen, email, form, minLength, pattern, required, validate, FormField, submit } from '@angular/forms/signals';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { TuiButton, TuiError, TuiIcon, TuiTextfield } from '@taiga-ui/core';
 import { TuiPassword } from '@taiga-ui/kit';
@@ -10,13 +10,13 @@ import { UserService } from '../../shared/services';
 
 @Component({
 	selector: 'dp-profile',
-	imports: [TuiTextfield, TuiButton, TuiIcon, TuiPassword, TuiError, TranslocoDirective, Field],
+	imports: [TuiTextfield, TuiButton, TuiIcon, TuiPassword, TuiError, TranslocoDirective, FormField],
 	template: `
 		<form class="flex flex-col w-full md:w-1/2 gap-2" *transloco="let transloco">
 			<div class="flex flex-col">
 				@let username = form.username;
 				<tui-textfield>
-					<input tuiTextfield [field]="username" [placeholder]="transloco('profile.username')" (keypress)="onKeyPress($event)" />
+					<input tuiTextfield [formField]="username" [placeholder]="transloco('profile.username')" (keypress)="onKeyPress($event)" />
 					@for (error of username().errors(); track error.kind) {
 						<tui-error [error]="transloco('validation.' + error.kind)" />
 					}
@@ -25,7 +25,7 @@ import { UserService } from '../../shared/services';
 			<div class="flex flex-col">
 				@let email = form.email;
 				<tui-textfield>
-					<input tuiTextfield [field]="email" [placeholder]="transloco('profile.email')" (keypress)="onKeyPress($event)" />
+					<input tuiTextfield [formField]="email" [placeholder]="transloco('profile.email')" (keypress)="onKeyPress($event)" />
 					@for (error of email().errors(); track error.kind) {
 						<tui-error [error]="transloco('validation.' + error.kind)" />
 					}
@@ -35,7 +35,12 @@ import { UserService } from '../../shared/services';
 				<div class="w-full md:w-1/2 flex flex-col">
 					<tui-textfield>
 						@let password = form.password;
-						<input tuiTextfield [field]="password" type="password" [placeholder]="transloco('profile.password')" (keypress)="onKeyPress($event)" />
+						<input
+							tuiTextfield
+							[formField]="password"
+							type="password"
+							[placeholder]="transloco('profile.password')"
+							(keypress)="onKeyPress($event)" />
 						@for (error of password().errors(); track error.kind) {
 							@if (error.kind === 'required') {
 								<tui-error [error]="transloco('validation.' + error.kind)" />
@@ -54,7 +59,7 @@ import { UserService } from '../../shared/services';
 						@let confirmPassword = form.confirmPassword;
 						<input
 							tuiTextfield
-							[field]="confirmPassword"
+							[formField]="confirmPassword"
 							type="password"
 							[placeholder]="transloco('profile.confirmPassword')"
 							(keypress)="onKeyPress($event)" />

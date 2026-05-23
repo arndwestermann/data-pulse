@@ -15,7 +15,7 @@ import { DatePipe } from '@angular/common';
 import { SelectionModel } from '@angular/cdk/collections';
 
 import { IRecord, SPECIALTIES, RECORDS_MARKED_AS_CORRECT_STORAGE_KEY, DEFAULT_FIELDS } from '../../shared/models';
-import { fromCache, toNativeDateTime, toTuiMonth, parseFilterDatesToTuiDayTime, toTuiDay } from '../../shared/utils';
+import { fromCache, toNativeDateTime, parseFilterDatesToTuiDayTime, toTuiDay } from '../../shared/utils';
 
 import { combineLatest, map, of, shareReplay, switchMap, take, tap } from 'rxjs';
 
@@ -35,10 +35,9 @@ import {
 	TuiInputChip,
 	TuiInputDateRange,
 	TuiInputDateTime,
-	TuiInputMonth,
 	TuiPagination,
 } from '@taiga-ui/kit';
-import { TuiDay, TuiDayRange, TuiMonth, TuiTime, TuiYear } from '@taiga-ui/cdk';
+import { TuiDay, TuiDayRange, TuiTime } from '@taiga-ui/cdk';
 import { GetStatusPipe, MarkedAsCorrectPipe } from './pipes';
 import { ActivatedRoute, Router } from '@angular/router';
 import { parse as parseQueryParams, stringify as stringifyQueryParams } from 'qs';
@@ -54,11 +53,11 @@ import {
 	isFilterCondition,
 	parseDateString,
 } from '@arndwestermann/common';
-import { Field } from '@angular/forms/signals';
+import { FormField } from '@angular/forms/signals';
 import { compatForm } from '@angular/forms/signals/compat';
 import { endOfMonth, startOfMonth, startOfToday } from 'date-fns';
 
-const angularImports = [FormsModule, ReactiveFormsModule, DatePipe, Field];
+const angularImports = [FormsModule, ReactiveFormsModule, DatePipe, FormField];
 const firstPartyImports = [GetStatusPipe, MarkedAsCorrectPipe];
 const taigaUiImports = [
 	TuiButton,
@@ -156,10 +155,11 @@ const thirdPartyImports = [TranslocoDirective];
 											@let dateControl = column === 'arrival' ? form.arrival : form.leaving;
 											<tui-textfield [tuiTextfieldCleaner]="true">
 												<label tuiLabel> {{ transloco('records.' + column) }}</label>
+												<!--TODO: Added $any to prevent error, remove once TaigaUI has better support for signal forms-->
 												<input
 													tuiInputDateTime
 													placeholder="04.09.1971"
-													[field]="dateControl"
+													[formField]="$any(dateControl)"
 													(keydown.enter)="onApplyFilter(column)"
 													(input)="onInputClear($event, column)" />
 												<tui-calendar *tuiTextfieldDropdown />
@@ -184,7 +184,7 @@ const thirdPartyImports = [TranslocoDirective];
 												<input
 													tuiTextfield
 													type="text"
-													[field]="searchControl"
+													[formField]="searchControl"
 													[placeholder]="transloco('records.' + column)"
 													(keydown.enter)="onApplyFilter($any(column))"
 													(input)="onInputClear($event, $any(column))" />
@@ -579,7 +579,7 @@ export class RecordsComponent {
 			}
 		}
 
-		const queryParams = stringifyQueryParams({ page: this.page(), size: this.size(), filters }, { addQueryPrefix: true });
+		const queryParams = stringifyQueryParams({ page: 1, size: this.size(), filters }, { addQueryPrefix: true });
 		this.router.navigateByUrl(location.pathname + queryParams, { onSameUrlNavigation: 'ignore' });
 	}
 

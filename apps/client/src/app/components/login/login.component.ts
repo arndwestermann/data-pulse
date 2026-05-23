@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { TuiButton, TuiError, TuiIcon, TuiTextfield } from '@taiga-ui/core';
 import { AppService, AuthenticationService } from '../../shared/services';
-import { form, required, Field, submit } from '@angular/forms/signals';
+import { form, required, FormField, submit } from '@angular/forms/signals';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { TuiButtonLoading, TuiPassword } from '@taiga-ui/kit';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -9,12 +9,12 @@ import { map, merge } from 'rxjs';
 
 @Component({
 	selector: 'dp-login',
-	imports: [TuiTextfield, TuiButton, TuiButtonLoading, TuiIcon, TuiPassword, TuiError, TranslocoDirective, Field],
+	imports: [TuiTextfield, TuiButton, TuiButtonLoading, TuiIcon, TuiPassword, TuiError, TranslocoDirective, FormField],
 	template: `
 		<ng-container *transloco="let transloco">
 			<tui-textfield class="w-full md:w-1/3">
 				@let username = form.username;
-				<input tuiTextfield [field]="username" [placeholder]="transloco('profile.username')" (keypress)="onKeyPress($event)" />
+				<input tuiTextfield [formField]="username" [placeholder]="transloco('profile.username')" (keypress)="onKeyPress($event)" />
 				@for (error of username().errors(); track error.kind) {
 					@if (username().touched() && username().invalid()) {
 						<tui-error [error]="transloco('validation.' + error.kind)" />
@@ -23,7 +23,7 @@ import { map, merge } from 'rxjs';
 			</tui-textfield>
 			<tui-textfield class="w-full md:w-1/3">
 				@let password = form.password;
-				<input tuiTextfield [field]="password" type="password" [placeholder]="transloco('profile.password')" (keypress)="onKeyPress($event)" />
+				<input tuiTextfield [formField]="password" type="password" [placeholder]="transloco('profile.password')" (keypress)="onKeyPress($event)" />
 				@for (error of password().errors(); track error.kind) {
 					@if (password().touched() && password().invalid()) {
 						<tui-error [error]="transloco('validation.' + error.kind)" />

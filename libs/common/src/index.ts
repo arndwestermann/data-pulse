@@ -17,4 +17,5 @@ export * from './lib/utils/deep-difference/deep-difference.util';
 export * from './lib/utils/jwt.util';
 export * from './lib/utils/create-where/create-where.util';
 export * from './lib/utils/parse-date-string/parse-date-string.util';
+export * from './lib/utils/hash-object/hash-object.util';
 export * from './lib/utils/miscellaneous.util';

@@ -3,7 +3,6 @@ import { select as d3Select } from 'd3-selection';
 import { transition as d3Transition } from 'd3-transition';
 
 @Component({
-	// eslint-disable-next-line @angular-eslint/component-selector
 	selector: 'g[dp-custom-heat-map-cell]',
 	standalone: true,
 	template: `

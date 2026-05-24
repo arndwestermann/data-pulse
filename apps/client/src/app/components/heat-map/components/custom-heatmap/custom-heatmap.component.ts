@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any  */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Component, Input, ViewEncapsulation, ChangeDetectionStrategy, ContentChild, TemplateRef, Output, EventEmitter } from '@angular/core';
 import { scaleBand } from 'd3-scale';
 
@@ -14,6 +15,7 @@ import {
 	ViewDimensions,
 } from '@swimlane/ngx-charts';
 import { CustomHeatCellSeriesComponent } from './components/custom-heatmap-cell-series.component';
+import { hashObject } from '@arndwestermann/common';
 
 interface RectItem {
 	fill: string;
@@ -22,6 +24,7 @@ interface RectItem {
 	width: number;
 	x: number;
 	y: number;
+	hash: string;
 }
 
 @Component({
@@ -64,7 +67,7 @@ interface RectItem {
 						[wrapTicks]="wrapTicks"
 						(dimensionsChanged)="updateYAxisWidth($event)" />
 				}
-				@for (rect of rects; track rect) {
+				@for (rect of rects; track rect.hash) {
 					<svg:rect
 						[attr.x]="rect.x"
 						[attr.y]="rect.y"
@@ -273,22 +276,22 @@ export class CustomHeatmapComponent extends BaseChartComponent {
 	}
 
 	getRects(): RectItem[] {
-		const rects: { x: any; y: any; rx: number; width: any; height: any; fill: string }[] = [];
+		const bw = this.xScale.bandwidth();
+		const bh = this.yScale.bandwidth();
 
-		this.xDomain.map((xVal) => {
+		return this.xDomain.flatMap((xVal) =>
 			this.yDomain.map((yVal) => {
-				rects.push({
-					x: this.xScale(xVal),
-					y: this.yScale(yVal),
+				const rect = {
+					x: this.xScale(xVal)!,
+					y: this.yScale(yVal)!,
 					rx: 3,
-					width: this.xScale.bandwidth(),
-					height: this.yScale.bandwidth(),
+					width: bw,
+					height: bh,
 					fill: 'rgba(200,200,200,0.03)',
-				});
-			});
-		});
-
-		return rects;
+				};
+				return { ...rect, hash: hashObject(rect) };
+			}),
+		);
 	}
 
 	onClick(data: any): void {
@@ -302,7 +305,7 @@ export class CustomHeatmapComponent extends BaseChartComponent {
 			if (value >= 17) return '#1e293b';
 			else if (value >= 16) return '#dc2626';
 			else if (value >= 15) return '#f97316';
-			else if (value >= 13) return '#fcd34d';
+			else if (value >= 10) return '#fcd34d';
 			else return '#fff';
 		});
 	}

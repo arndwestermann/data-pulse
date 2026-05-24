@@ -262,7 +262,7 @@ const thirdPartyImports = [TranslocoDirective];
 										@let icon = '@tui.fa.' + (isSelected ? 'regular' : 'solid') + '.square-check';
 
 										<button tuiOption new type="button" (pointerdown)="onConetextButtonClick(dropdown, 'select', item)">
-											{{ transloco('general.' + isSelected ? 'unselect' : 'select') }} <tui-icon [icon]="icon" class="ml-2 w-4 text-blue-500" />
+											{{ transloco('general.' + (isSelected ? 'unselect' : 'select')) }} <tui-icon [icon]="icon" class="ml-2 w-4 text-blue-500" />
 										</button>
 
 										<button tuiOption new type="button" (pointerdown)="onConetextButtonClick(dropdown, 'delete', item)">

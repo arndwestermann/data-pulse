@@ -2,35 +2,13 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Params } from '@angular/router';
 
-import { TuiDialogService } from '@taiga-ui/core';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import {
-	catchError,
-	combineLatest,
-	EMPTY,
-	expand,
-	filter,
-	forkJoin,
-	from,
-	fromEvent,
-	map,
-	merge,
-	Observable,
-	of,
-	scan,
-	share,
-	shareReplay,
-	startWith,
-	Subject,
-	switchMap,
-} from 'rxjs';
+import { combineLatest, map, merge, scan, share, shareReplay, startWith, Subject, switchMap } from 'rxjs';
 import { stringify as stringifyQueryParams } from 'qs';
 import { IPage } from '@arndwestermann/common';
 
 import { environment } from '../../../../environments/environment';
-import { IRecord, IRecordDto, IWorker, NEVER_ASK_DELETE_AGAIN_STORAGE_KEY, TCrud } from '../../models';
-import { mapDtoToRecord, mapRecordToDto } from '../../utils';
-import { CacheService } from '../cache/cache.service';
+import { IRecord, IRecordDto, TCrud } from '../../models';
+import { mapDtoToRecord } from '../../utils';
 import { KeyValue } from '@angular/common';
 
 @Injectable({
@@ -79,6 +57,7 @@ export class HeatMapService {
 	);
 
 	public setQueryParams(params: Params): void {
+		console.log(params);
 		this.queryParamsSubject.next(params);
 	}
 }

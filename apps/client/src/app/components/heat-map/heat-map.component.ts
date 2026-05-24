@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, isDevMode, linkedSignal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { IRecord, SPECIALTIES } from '../../shared/models';
-import { startOfMonth, endOfMonth, isSameDay, startOfToday } from 'date-fns';
+import { startOfMonth, endOfMonth, isSameDay, startOfToday, startOfDay, endOfDay } from 'date-fns';
 import { FormsModule } from '@angular/forms';
 import { TuiDayRange } from '@taiga-ui/cdk';
 import { DatePipe, KeyValue } from '@angular/common';
@@ -389,8 +389,8 @@ export class HeatMapComponent {
 			if (Array.isArray(element)) {
 				filters[_key] = formatDateString(toNativeDateTime(element[0], element[1]), 'dd.MM.yyyy HH:mm:ss');
 			} else if (element instanceof TuiDayRange) {
-				const start = element.from.toLocalNativeDate();
-				const end = element.to.toLocalNativeDate();
+				const start = startOfDay(element.from.toLocalNativeDate());
+				const end = endOfDay(element.to.toLocalNativeDate());
 				const value = [formatDateString(start, 'dd.MM.yyyy HH:mm:ss'), formatDateString(end, 'dd.MM.yyyy HH:mm:ss')];
 				filters[_key] = { value, operator: 'between' } satisfies FilterCondition;
 			} else {

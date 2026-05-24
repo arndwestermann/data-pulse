@@ -2,6 +2,7 @@
 import { Component, Input, Output, EventEmitter, OnChanges, OnInit, ChangeDetectionStrategy, TemplateRef } from '@angular/core';
 import { DataItem, escapeLabel, formatLabel, NgxChartsModule, PlacementTypes, Series, StyleTypes } from '@swimlane/ngx-charts';
 import { CustomHeatMapCellComponent } from './custom-heatmap-cell.component';
+import { hashObject } from '@arndwestermann/common';
 
 interface Cell {
 	cell: DataItem;
@@ -14,32 +15,33 @@ interface Cell {
 	width: number;
 	x: number;
 	y: number;
+	hash: string;
 }
 @Component({
 	selector: 'g[dp-custom-heat-map-cell-series]',
 	imports: [CustomHeatMapCellComponent, NgxChartsModule],
 	template: `
-		@for (c of cells; track trackBy($index, c)) {
+		@for (cell of cells; track cell.hash) {
 			<svg:g
 				dp-custom-heat-map-cell
-				[x]="c.x"
-				[y]="c.y"
-				[width]="c.width"
-				[height]="c.height"
-				[fill]="c.fill"
-				[data]="c.data"
-				(select)="onClick(c.cell)"
-				(activate)="activate.emit(c.cell)"
-				(deactivate)="deactivate.emit(c.cell)"
+				[x]="cell.x"
+				[y]="cell.y"
+				[width]="cell.width"
+				[height]="cell.height"
+				[fill]="cell.fill"
+				[data]="cell.data"
+				(select)="onClick(cell.cell)"
+				(activate)="activate.emit(cell.cell)"
+				(deactivate)="deactivate.emit(cell.cell)"
 				[gradient]="gradient"
 				[animations]="animations"
 				ngx-tooltip
 				[tooltipDisabled]="tooltipDisabled"
 				[tooltipPlacement]="placementTypes.Top"
 				[tooltipType]="styleTypes.tooltip"
-				[tooltipTitle]="tooltipTemplate ? undefined : tooltipText(c)"
+				[tooltipTitle]="tooltipTemplate ? undefined : tooltipText(cell)"
 				[tooltipTemplate]="tooltipTemplate"
-				[tooltipContext]="{ series: c.series, name: c.label, value: c.data }"></svg:g>
+				[tooltipContext]="{ series: cell.series, name: cell.label, value: cell.data }"></svg:g>
 		}
 	`,
 	changeDetection: ChangeDetectionStrategy.OnPush,
@@ -79,29 +81,26 @@ export class CustomHeatCellSeriesComponent implements OnChanges, OnInit {
 	}
 
 	getCells(): Cell[] {
-		const cells: Cell[] = [];
+		const width = this.xScale.bandwidth();
+		const height = this.yScale.bandwidth();
 
-		this.data.map((row: any) => {
-			row.series.map((cell: any) => {
-				const value = cell.value;
-				cell.series = row.name;
-
-				cells.push({
+		return this.data.flatMap((row: { name: string; series: { name: string; value: number }[] }) => {
+			return row.series.map((cell) => {
+				const tmp = {
 					row,
-					cell,
+					cell: { ...cell, series: row.name },
 					x: this.xScale(row.name),
 					y: this.yScale(cell.name),
-					width: this.xScale.bandwidth(),
-					height: this.yScale.bandwidth(),
-					fill: this.colors.getColor(value),
-					data: value,
+					width,
+					height,
+					fill: this.colors.getColor(cell.value),
+					data: cell.value,
 					label: formatLabel(cell.name),
 					series: row.name,
-				});
+				};
+				return { ...tmp, hash: hashObject(tmp) };
 			});
 		});
-
-		return cells;
 	}
 
 	getTooltipText({ label, data, series }: { label: string; data: number; series: string }): string {

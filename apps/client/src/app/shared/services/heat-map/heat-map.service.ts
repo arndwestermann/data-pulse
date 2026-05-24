@@ -57,7 +57,6 @@ export class HeatMapService {
 	);
 
 	public setQueryParams(params: Params): void {
-		console.log(params);
 		this.queryParamsSubject.next(params);
 	}
 }

@@ -36,6 +36,7 @@ import {
 	TuiInputDateRange,
 	TuiInputDateTime,
 	TuiPagination,
+	TuiSelect,
 } from '@taiga-ui/kit';
 import { TuiDay, TuiDayRange, TuiTime } from '@taiga-ui/cdk';
 import { GetStatusPipe, MarkedAsCorrectPipe } from './pipes';
@@ -77,6 +78,7 @@ const taigaUiImports = [
 	TuiPagination,
 	TuiHideSelectedPipe,
 	TuiInputDateRange,
+	TuiSelect,
 ];
 const thirdPartyImports = [TranslocoDirective];
 @Component({
@@ -108,8 +110,17 @@ const thirdPartyImports = [TranslocoDirective];
 						<span>({{ selections.selected.length }})</span>
 					}
 				</button>
-				<button type="button" tuiButton appearance="primary" size="s" (pointerdown)="onPointerEvent($event)">
+				<button type="button" tuiButton appearance="primary" size="s" [tuiDropdown]="settingsTemplate" [(tuiDropdownOpen)]="isSettingsOpen">
 					<tui-icon icon="@tui.fa.solid.gear" />
+					<ng-template #settingsTemplate let-close>
+						<div class="w-50">
+							<tui-textfield tuiChevron tuiTextfieldSize="m" [tuiTextfieldCleaner]="false">
+								<input tuiSelect [(ngModel)]="size" (ngModelChange)="onPageSizeChange()" />
+
+								<tui-data-list-wrapper *tuiTextfieldDropdown new [items]="pageSizes()" />
+							</tui-textfield>
+						</div>
+					</ng-template>
 				</button>
 
 				<tui-textfield tuiTextfieldSize="s" class="w-50" [tuiTextfieldCleaner]="true">
@@ -262,7 +273,7 @@ const thirdPartyImports = [TranslocoDirective];
 										@let icon = '@tui.fa.' + (isSelected ? 'regular' : 'solid') + '.square-check';
 
 										<button tuiOption new type="button" (pointerdown)="onConetextButtonClick(dropdown, 'select', item)">
-											{{ transloco('general.' + isSelected ? 'unselect' : 'select') }} <tui-icon [icon]="icon" class="ml-2 w-4 text-blue-500" />
+											{{ transloco('general.' + (isSelected ? 'unselect' : 'select')) }} <tui-icon [icon]="icon" class="ml-2 w-4 text-blue-500" />
 										</button>
 
 										<button tuiOption new type="button" (pointerdown)="onConetextButtonClick(dropdown, 'delete', item)">
@@ -468,6 +479,11 @@ export class RecordsComponent {
 		return totalItems > 0 ? Math.ceil(totalItems / this.size()) : 1;
 	});
 
+	public readonly isSettingsOpen = signal(false);
+	public readonly pageSizes = computed(() => {
+		return [10, 25, 50, 100];
+	});
+
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate(`specialty.${item}`);
 
 	constructor() {
@@ -549,7 +565,7 @@ export class RecordsComponent {
 		});
 	}
 
-	public onApplyFilter(_: keyof ReturnType<typeof this.filters>) {
+	public onApplyFilter(_?: keyof ReturnType<typeof this.filters>) {
 		const raw = this.form().value();
 
 		const filters: Record<string, FilterInput> = {};
@@ -593,6 +609,10 @@ export class RecordsComponent {
 	public onDateRangeChanged(event: TuiDayRange): void {
 		this.form.range().value.set(event);
 		this.onApplyFilter('range');
+	}
+
+	public onPageSizeChange() {
+		this.onApplyFilter();
 	}
 
 	private parseRangeQuery(filters?: Record<string, FilterInput>) {

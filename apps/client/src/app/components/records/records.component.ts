@@ -55,7 +55,7 @@ import {
 } from '@arndwestermann/common';
 import { FormField } from '@angular/forms/signals';
 import { compatForm } from '@angular/forms/signals/compat';
-import { endOfMonth, startOfMonth, startOfToday } from 'date-fns';
+import { endOfDay, endOfMonth, startOfDay, startOfMonth, startOfToday } from 'date-fns';
 
 const angularImports = [FormsModule, ReactiveFormsModule, DatePipe, FormField];
 const firstPartyImports = [GetStatusPipe, MarkedAsCorrectPipe];
@@ -570,8 +570,8 @@ export class RecordsComponent {
 					filters[_key] = value;
 				}
 			} else if (element instanceof TuiDayRange) {
-				const start = element.from.toLocalNativeDate();
-				const end = element.to.toLocalNativeDate();
+				const start = startOfDay(element.from.toLocalNativeDate());
+				const end = endOfDay(element.to.toLocalNativeDate());
 				const value = [formatDateString(start, 'dd.MM.yyyy HH:mm:ss'), formatDateString(end, 'dd.MM.yyyy HH:mm:ss')];
 				filters[_key] = { value, operator: 'between' } satisfies FilterCondition;
 			} else {

@@ -13,7 +13,13 @@
 		"select": "Select",
 		"unselect": "Unselect",
 		"fromTo": "From - To",
-		"chooseRange": "Choose range"
+		"chooseRange": "Choose range",
+		"pageSize": "Page Size",
+		"order": {
+			"label": "Order",
+			"asc": "Ascending",
+			"desc": "Descending"
+		}
 	},
 	"routes": {
 		"records": "Records",

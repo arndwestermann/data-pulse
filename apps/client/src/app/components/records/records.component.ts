@@ -40,7 +40,7 @@ import {
 } from '@taiga-ui/kit';
 import { TuiDay, TuiDayRange, TuiTime } from '@taiga-ui/cdk';
 import { GetStatusPipe, MarkedAsCorrectPipe } from './pipes';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { parse as parseQueryParams, stringify as stringifyQueryParams } from 'qs';
 import {
 	DEFAULT_ORDER,
@@ -113,11 +113,21 @@ const thirdPartyImports = [TranslocoDirective];
 				<button type="button" tuiButton appearance="primary" size="s" [tuiDropdown]="settingsTemplate" [(tuiDropdownOpen)]="isSettingsOpen">
 					<tui-icon icon="@tui.fa.solid.gear" />
 					<ng-template #settingsTemplate let-close>
-						<div class="w-50">
+						<div class="flex flex-col w-50 p-2 gap-2">
 							<tui-textfield tuiChevron tuiTextfieldSize="m" [tuiTextfieldCleaner]="false">
-								<input tuiSelect [(ngModel)]="size" (ngModelChange)="onPageSizeChange()" />
+								<label tuiLabel>{{ transloco('general.pageSize') }}</label>
+								<input tuiSelect [(ngModel)]="size" (ngModelChange)="onApplyFilter()" />
 
 								<tui-data-list-wrapper *tuiTextfieldDropdown new [items]="pageSizes()" />
+							</tui-textfield>
+							<tui-textfield tuiChevron tuiTextfieldSize="m" [tuiTextfieldCleaner]="false" [content]="orderTemplate">
+								<label tuiLabel>{{ transloco('general.order.label') }}</label>
+								<input tuiSelect [(ngModel)]="order" (ngModelChange)="onApplyFilter()" />
+
+								<tui-data-list-wrapper *tuiTextfieldDropdown new [items]="orders()" [itemContent]="orderTemplate" />
+								<ng-template #orderTemplate let-order>
+									{{ transloco('general.order.' + order) }}
+								</ng-template>
 							</tui-textfield>
 						</div>
 					</ng-template>
@@ -407,7 +417,7 @@ export class RecordsComponent {
 		const value = this.queryParams()?.size;
 		return Number.isNaN(value) || value === undefined ? DEFAULT_PAGE_SIZE : value;
 	});
-	public readonly order = linkedSignal(() => this.queryParams()?.order ?? DEFAULT_ORDER);
+	public readonly order = linkedSignal(() => this.queryParams()?.order ?? 'desc');
 	public readonly filters = linkedSignal(() => {
 		const filters = this.queryParams()?.filters;
 		const arrival = filters?.['arrival'];
@@ -480,9 +490,9 @@ export class RecordsComponent {
 	});
 
 	public readonly isSettingsOpen = signal(false);
-	public readonly pageSizes = computed(() => {
-		return [10, 25, 50, 100];
-	});
+	public readonly pageSizes = computed(() => [10, 25, 50, 100]);
+
+	public readonly orders = computed(() => ['asc', 'desc']);
 
 	protected readonly stringifySpecialty = (item: string): string => this.translocoService.translate(`specialty.${item}`);
 
@@ -490,7 +500,11 @@ export class RecordsComponent {
 		this.queryParams$
 			.pipe(
 				take(1),
-				tap((value) => this.recordService.setQueryParams(value)),
+				tap((value) => {
+					const params: Params = { ...value };
+					if (!('order' in params)) params['order'] = 'desc';
+					this.recordService.setQueryParams(params);
+				}),
 			)
 			.subscribe();
 	}
@@ -595,7 +609,7 @@ export class RecordsComponent {
 			}
 		}
 
-		const queryParams = stringifyQueryParams({ page: 1, size: this.size(), filters }, { addQueryPrefix: true });
+		const queryParams = stringifyQueryParams({ page: 1, size: this.size(), order: this.order(), filters }, { addQueryPrefix: true });
 		this.router.navigateByUrl(location.pathname + queryParams, { onSameUrlNavigation: 'ignore' });
 	}
 
@@ -609,10 +623,6 @@ export class RecordsComponent {
 	public onDateRangeChanged(event: TuiDayRange): void {
 		this.form.range().value.set(event);
 		this.onApplyFilter('range');
-	}
-
-	public onPageSizeChange() {
-		this.onApplyFilter();
 	}
 
 	private parseRangeQuery(filters?: Record<string, FilterInput>) {

@@ -13,7 +13,13 @@
 		"select": "Auswählen",
 		"unselect": "Abwählen",
 		"fromTo": "Von - Bis",
-		"chooseRange": "Zeitraum auswählen"
+		"chooseRange": "Zeitraum auswählen",
+		"pageSize": "Seitengröße",
+		"order": {
+			"label": "Sortierung",
+			"asc": "Aufsteigend",
+			"desc": "Absteigend"
+		}
 	},
 	"routes": {
 		"records": "Archiv",
